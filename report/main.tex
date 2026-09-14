@@ -606,9 +606,9 @@ curl localhost & HTTP 200 & HTTP 200 & OK, sin fallo \\
 \hline
 nginx -t & Syntax OK & Syntax OK & OK, sin fallo \\
 \hline
-\texttt{pip3 install} & Instalación OK & \texttt{externally-managed-environment} & Python 3.14/Ubuntu 26.04 (PEP 668); corregido con \texttt{--break-system-packages} \\
+\texttt{pip3 install} & Instalación OK & \url{externally-managed-environment} & Python 3.14/Ubuntu 26.04 (PEP 668); corregido con \texttt{--break-system-packages} \\
 \hline
-Arranque \texttt{alerts-api}/\texttt{actions-api} & \texttt{active (running)} & \texttt{status=200/CHDIR} & \texttt{User=www-data} sin permiso sobre \texttt{\$HOME} (750); corregido a usuario dueño del repo \\
+Arranque \url{alerts-api/actions-api} & \texttt{active (running)} & \texttt{status=200/CHDIR} & \texttt{User=www-data} sin permiso sobre \texttt{\$HOME} (750); corregido a usuario dueño del repo \\
 \hline
 Carga del dashboard & Alertas visibles & \texttt{Error conectando a la API} & CORS: fetch cruzado de puerto bloqueado; corregido consumiendo vía proxy Nginx \\
 \hline
