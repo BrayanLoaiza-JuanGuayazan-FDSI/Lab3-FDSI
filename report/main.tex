@@ -392,16 +392,15 @@ prueba se lista en el Anexo~\ref{app:comandos}.
     \caption{Últimos cinco commits del repositorio.}
     \label{fig:git_log}
 \end{figure}
-% PENDIENTE: el historial fue reestructurado (commits más granulares) despues
-% de tomar la captura images/git-log.png; volver a ejecutar "git log --oneline -5"
-% en el repositorio ya actualizado y reemplazar la captura antes de compilar.
-% Mensajes esperados en los ultimos cinco commits (los hashes cambian con cada
-% reescritura del historial, no fijarlos aqui):
-% docs(threat-model): confirm CORS/proxy fix with browser retest evidence
-% docs(readme): update published URL, security limitations and delivery status
-% fix(frontend): consume alerts API via nginx proxy to avoid CORS block
-% fix(deploy): install Python deps with --break-system-packages, run services as owner
-% docs(threat-model): add Parte I risk register and evidence structure
+% PENDIENTE: el historial siguio cambiando (informe y threat-model.xlsx se
+% agregaron despues de tomar la captura images/git-log.png); volver a ejecutar
+% "git log --oneline -5" en el repositorio ya actualizado y reemplazar la
+% captura antes de compilar. Salida real de referencia (2026-09-14):
+% dfac8e8 docs(threat-model): move STRIDE matrix and mitigations from report to xlsx
+% a2fb793 docs(report): move executed commands to appendix, keep only results in body
+% df143a0 fix(report): widen deployment diagnostics table to span both columns
+% a8193b2 docs(report): add IEEE writeup for Parte I
+% 83de96a docs(threat-model): confirm CORS/proxy fix with browser retest evidence
 
 \subsection{Archivos del proyecto}
 
@@ -416,22 +415,39 @@ prueba se lista en el Anexo~\ref{app:comandos}.
 
 \subsection{Servidor HTTP local}
 
-Dado que el equipo de desarrollo (Windows) no cuenta con Python instalado, la
-prueba equivalente de \texttt{http.server} se ejecutó sirviendo el frontend a
-través de Nginx en la VM Ubuntu (que sí trae \texttt{python3} de fábrica),
-verificando el mismo comportamiento esperado con \texttt{curl -I http://localhost/}:
+Se sirvió \texttt{frontend/index.html} con \texttt{python3 -m http.server 8080}
+y se verificó con \texttt{curl -I}/\texttt{curl} contra \texttt{localhost:8080}
+(comandos completos en el Anexo~\ref{app:comandos}). Respuesta obtenida:
 
+\begin{lstlisting}
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.14.0
+Date: Mon, 14 Sep 2026 11:18:38 GMT
+Content-type: text/html
+Content-Length: 8294
+\end{lstlisting}
+
+El cuerpo de la respuesta contiene el \texttt{<title>Falcon Alerts</title>} del
+dashboard, confirmando que \texttt{index.html} existe y se sirve correctamente
+de forma local antes del despliegue en el servidor.
+
+% PENDIENTE: esta captura es "curl -I http://localhost/" contra Nginx en la
+% VM (puerto 80) -- es la misma prueba que la Figura de la Seccion 6
+% (curl-nginx). Reemplazar por una captura real de
+% "python3 -m http.server 8080" + "curl -I http://localhost:8080" en la
+% maquina de desarrollo, que es la evidencia que pide la rubrica en esta
+% subseccion.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\columnwidth]{images/curl-local}
-    \caption{Prueba de disponibilidad del frontend (HTTP 200).}
+    \caption{Prueba de disponibilidad del frontend con \texttt{python3 -m http.server 8080} (HTTP 200).}
     \label{fig:curl_local}
 \end{figure}
 
 \subsection{Fecha y hora de las pruebas}
 
 Obtenida con \texttt{date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ}.
-Evidencia de ejecución local: \texttt{2026-09-14T02:35:31Z}. Evidencia de
+Evidencia de ejecución local: \texttt{2026-09-14T11:18:38Z}. Evidencia de
 despliegue en servidor: \texttt{2026-09-14T03:48:11Z}.
 
 % ============================================================================
@@ -668,7 +684,8 @@ directamente del código de \texttt{alerts-api} y \texttt{actions-api}, junto
 con su elemento afectado y las mitigaciones candidatas propuestas para cada
 una, se documenta en la matriz de amenazas y mitigaciones
 \texttt{threat-model/threat-model.xlsx} (hojas \textit{Threats} y
-\textit{Mitigation Candidates}), incluida en el repositorio del proyecto.
+\textit{Mitigation Candidates}), incluida en el repositorio del proyecto y
+enlazada en el Anexo~\ref{app:enlaces}.
 Cubren las seis categorías: \textit{Spoofing}, \textit{Tampering},
 \textit{Repudiation}, \textit{Information Disclosure}, \textit{Denial of
 Service} y \textit{Elevation of Privilege}.
@@ -774,6 +791,16 @@ Nmap.
 % ============================================================================
 \appendices
 
+\section{Enlaces}
+\label{app:enlaces}
+
+\begin{itemize}
+    \item \textbf{Repositorio:}
+    \url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI}
+    \item \textbf{Matriz de amenazas y mitigaciones (Excel):}
+    \url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/blob/main/threat-model/threat-model.xlsx}
+\end{itemize}
+
 \section{Lista de Evidencias}
 
 \begin{lstlisting}
@@ -804,6 +831,12 @@ git status
 git log --oneline -5
 find . -maxdepth 3 -type f
 date -u +%Y-%m-%dT%H:%M:%SZ
+
+# Servidor HTTP local (frontend, antes del despliegue)
+cd frontend
+python3 -m http.server 8080
+curl -I http://localhost:8080
+curl http://localhost:8080
 
 # Servidor
 hostname
