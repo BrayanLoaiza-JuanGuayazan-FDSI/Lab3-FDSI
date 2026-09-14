@@ -347,6 +347,7 @@ Lab3-FDSI/
 |-- evidence/{local-exec.txt,server-nginx.txt,red/,blue/}
 |-- reports/zap-passive/
 |-- risk-register.md
+|-- threat-model/threat-model.xlsx
 |-- deploy.sh
 `-- README.md
 \end{lstlisting}
@@ -358,8 +359,9 @@ procedimiento de despliegue mediante \texttt{deploy.sh}, la URL publicada
 limitaciones de seguridad conocidas (sin autenticación, sin TLS,
 \texttt{/debug/env} expuesto, sin validación de entrada, sin rate limiting,
 sin cabeceras de seguridad, datos en memoria, logs sin cifrar). El
-\texttt{risk-register.md} contiene el detalle completo de activos, actores,
-límites de confianza, superficie de ataque y las seis hipótesis STRIDE.
+\texttt{risk-register.md} contiene activos, actores, límites de confianza y
+superficie de ataque; la matriz de hipótesis STRIDE y de mitigaciones vive en
+\texttt{threat-model/threat-model.xlsx}.
 
 % ============================================================================
 % 5. EVIDENCIAS DE EJECUCIÓN LOCAL
@@ -620,7 +622,9 @@ secciones anteriores de este informe.
 
 El modelo de amenazas permite identificar los activos, actores, límites de
 confianza y posibles riesgos de seguridad existentes en la primera versión
-del sistema. El detalle completo se encuentra en \texttt{risk-register.md}.
+del sistema. El detalle narrativo se encuentra en \texttt{risk-register.md};
+la matriz de amenazas STRIDE y de mitigaciones, en
+\texttt{threat-model/threat-model.xlsx}.
 
 \subsection{Activos}
 
@@ -659,73 +663,15 @@ esta entrega).
 
 \subsection{Hipótesis STRIDE}
 
-La Tabla~\ref{tab:stride} presenta una hipótesis por cada una de las seis
-categorías STRIDE, derivada directamente del código de \texttt{alerts-api} y
-\texttt{actions-api} (no de un ejemplo genérico).
-
-\clearpage
-\begin{table*}[t]
-\centering
-\caption{Modelo inicial de amenazas STRIDE --- CrowdStrike Falcon Alert Simulator}
-\label{tab:stride}
-\scriptsize
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{0.5cm}|p{2.1cm}|p{3.9cm}|p{3.9cm}|p{2.3cm}|}
-\hline
-\textbf{ID} & \textbf{Categoría} & \textbf{Hipótesis técnica} & \textbf{Evidencia / mitigación} & \textbf{Estado} \\
-\hline
-
-H1 & Spoofing &
-Sin autenticación, cualquiera registra una acción suplantando a un analista
-(\texttt{analyst} es texto libre en el POST). &
-\texttt{POST /actions} con \texttt{analyst} arbitrario se acepta sin verificar
-identidad. Mitigación: autenticación de analistas en Lab 4. &
-Pendiente Lab 4 \\
-\hline
-
-H2 & Tampering &
-Sin TLS ni validación de esquema, el contenido de una alerta puede alterarse
-en tránsito o al crearla con campos arbitrarios. &
-\texttt{POST /alerts} acepta \texttt{severity}/\texttt{host}/\texttt{ioc}
-arbitrarios sin validar. Mitigación: validación de esquema + HTTPS. &
-Pendiente Lab 4 \\
-\hline
-
-H3 & Repudiation &
-La bitácora de acciones no está ligada a una identidad autenticada; una
-acción puede negarse o atribuirse a otro analista. &
-\texttt{logging.info} solo registra lo que el cliente declara, sin sesión que
-lo respalde. Mitigación: auditoría firmada ligada a sesión. &
-Pendiente Lab 4 \\
-\hline
-
-H4 & Information Disclosure &
-\texttt{/debug/env} expone variables de entorno del servidor; los headers de
-Flask/Nginx revelan tecnología y versión. &
-\texttt{curl -i .../debug/env} devuelve el entorno completo del proceso.
-Mitigación: \texttt{server\_tokens off}, retirar/proteger el endpoint. &
-Mitigado parcialmente \\
-\hline
-
-H5 & Denial of Service &
-El servidor Flask de desarrollo (single-threaded, no apto para producción) y
-los POST sin límite permiten crecimiento no acotado de \texttt{ALERTS}/\texttt{ACTIONS}
-en memoria. &
-Ráfaga de \texttt{POST /alerts} crece la lista sin límite. Mitigación:
-WSGI de producción (gunicorn) + \texttt{limit\_req} en Nginx. &
-Pendiente Lab 4/5 \\
-\hline
-
-H6 & Elevation of Privilege &
-Sin modelo de autorización, cualquier cliente anónimo ejecuta acciones
-privilegiadas (cerrar/escalar alertas CRITICAL) igual que un analista real. &
-\texttt{POST /actions} con \texttt{action=close} cambia el estado de una
-alerta CRITICAL sin control de rol. Mitigación: RBAC en Lab 4. &
-Pendiente Lab 4 \\
-\hline
-
-\end{tabular}
-\end{table*}
+El detalle de las seis hipótesis STRIDE (una por categoría), derivadas
+directamente del código de \texttt{alerts-api} y \texttt{actions-api}, junto
+con su elemento afectado y las mitigaciones candidatas propuestas para cada
+una, se documenta en la matriz de amenazas y mitigaciones
+\texttt{threat-model/threat-model.xlsx} (hojas \textit{Threats} y
+\textit{Mitigation Candidates}), incluida en el repositorio del proyecto.
+Cubren las seis categorías: \textit{Spoofing}, \textit{Tampering},
+\textit{Repudiation}, \textit{Information Disclosure}, \textit{Denial of
+Service} y \textit{Elevation of Privilege}.
 
 \subsection{Relación entre amenazas y arquitectura}
 
@@ -738,14 +684,9 @@ Information Disclosure en la Parte II.
 
 \subsection{Mitigaciones propuestas}
 
-\begin{itemize}
-    \item Implementar HTTPS/TLS y autenticación de analistas (Laboratorio 4).
-    \item Restringir el bind de los microservicios a \texttt{127.0.0.1} y
-    dejar que solo Nginx los exponga.
-    \item Retirar o proteger \texttt{/debug/env}; aplicar \texttt{server\_tokens off}.
-    \item Servir con un WSGI de producción y limitar tasa de solicitudes.
-    \item Incorporar RBAC y validación de esquema en las siguientes fases.
-\end{itemize}
+Las mitigaciones candidatas (M-001 a M-006), una por cada hipótesis STRIDE,
+se listan junto con las amenazas que atienden en la hoja \textit{Mitigation
+Candidates} de \texttt{threat-model/threat-model.xlsx}.
 
 % ============================================================================
 % 9. CONCLUSIONES
