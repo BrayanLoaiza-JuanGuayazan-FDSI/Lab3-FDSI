@@ -114,9 +114,14 @@ curl -I http://localhost
 
 ## URL publicada
 
-`http://<IP-DEL-SERVIDOR>/`  
-Alerts API: `http://<IP-DEL-SERVIDOR>:5000/alerts`  
-Actions API: `http://<IP-DEL-SERVIDOR>:5001/actions`
+VM Ubuntu Server 26.04.1 LTS en VMware Workstation (red NAT, alcanzable desde el host):
+
+`http://192.168.17.129/`
+Alerts API: `http://192.168.17.129:5000/alerts`
+Actions API: `http://192.168.17.129:5001/actions`
+
+> Nota: IP interna de laboratorio (VMware NAT), no una IP pública de Internet. Se
+> actualizará si el docente asigna una instancia en la nube para la Parte II.
 
 ---
 
@@ -153,6 +158,24 @@ Actions API: `http://<IP-DEL-SERVIDOR>:5001/actions`
 
 ---
 
+## Modelo de amenazas
+
+Ver [`risk-register.md`](risk-register.md) para el DFD, activos, actores, límites de
+confianza, superficie de ataque y las seis hipótesis STRIDE (una por categoría) con su
+evidencia y mitigación propuesta. El diagrama de flujo de datos se encuentra en
+`diagrams/dfd-lab3.png`.
+
+## Estado de la entrega
+
+- **Parte I (actual):** construcción, publicación, estructura de repositorio, evidencia
+  de ejecución local y modelo de amenazas inicial.
+- **Parte II (pendiente):** despliegue verificado en VM Ubuntu Server, reconocimiento
+  Red Team (Nmap/curl/ZAP pasivo), captura y correlación Blue Team (tcpdump/logs),
+  hardening de Nginx y retest. Evidencia en `evidence/red/`, `evidence/blue/` y
+  `reports/zap-passive/`.
+
+---
+
 ## Limitaciones de seguridad conocidas (intencionales)
 
 - ❌ Sin autenticación en ningún endpoint
@@ -161,7 +184,7 @@ Actions API: `http://<IP-DEL-SERVIDOR>:5001/actions`
 - ❌ Sin validación de entrada en campos de texto libre
 - ❌ Sin rate limiting
 - ❌ Sin cabeceras de seguridad HTTP (CSP, HSTS, X-Frame-Options)
-- ❌ CORS abierto (permite cualquier origen)
+- ❌ Sin cabeceras CORS en las APIs Flask (`/alerts`, `/actions` en :5000/:5001 siguen accesibles sin autenticación vía curl/servidor a servidor; el dashboard ahora las consume a través del proxy de Nginx en `/api/alerts/` para evitar el bloqueo del navegador por same-origin policy — ver hallazgo L3 en `risk-register.md`)
 - ❌ Datos almacenados en memoria (sin persistencia)
 - ❌ Logs sin cifrar ni control de acceso
 
