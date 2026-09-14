@@ -368,13 +368,10 @@ límites de confianza, superficie de ataque y las seis hipótesis STRIDE.
 
 La ejecución local permite comprobar que el repositorio fue clonado
 correctamente, que los archivos de la aplicación existen y que el frontend
-funciona antes del despliegue en el servidor.
+funciona antes del despliegue en el servidor. El comando exacto usado en cada
+prueba se lista en el Anexo~\ref{app:comandos}.
 
 \subsection{Estado del repositorio}
-
-\begin{lstlisting}[language=bash]
-git status
-\end{lstlisting}
 
 \begin{figure}[H]
     \centering
@@ -386,10 +383,6 @@ git status
 % nothing to commit, working tree clean" (tras subir los commits de esta entrega).
 
 \subsection{Historial de commits}
-
-\begin{lstlisting}[language=bash]
-git log --oneline -5
-\end{lstlisting}
 
 \begin{figure}[H]
     \centering
@@ -410,10 +403,6 @@ git log --oneline -5
 
 \subsection{Archivos del proyecto}
 
-\begin{lstlisting}[language=bash]
-find . -maxdepth 3 -type f
-\end{lstlisting}
-
 \begin{figure}[H]
     \centering
     \includegraphics[width=\columnwidth]{images/find-files}
@@ -428,12 +417,7 @@ find . -maxdepth 3 -type f
 Dado que el equipo de desarrollo (Windows) no cuenta con Python instalado, la
 prueba equivalente de \texttt{http.server} se ejecutó sirviendo el frontend a
 través de Nginx en la VM Ubuntu (que sí trae \texttt{python3} de fábrica),
-verificando el mismo comportamiento esperado:
-
-\begin{lstlisting}[language=bash]
-curl -I http://localhost/       # en la VM, vía Nginx
-curl http://localhost/
-\end{lstlisting}
+verificando el mismo comportamiento esperado con \texttt{curl -I http://localhost/}:
 
 \begin{figure}[H]
     \centering
@@ -444,9 +428,7 @@ curl http://localhost/
 
 \subsection{Fecha y hora de las pruebas}
 
-\begin{lstlisting}[language=bash]
-date -u +%Y-%m-%dT%H:%M:%SZ
-\end{lstlisting}
+Obtenida con \texttt{date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ}.
 Evidencia de ejecución local: \texttt{2026-09-14T02:35:31Z}. Evidencia de
 despliegue en servidor: \texttt{2026-09-14T03:48:11Z}.
 
@@ -457,15 +439,10 @@ despliegue en servidor: \texttt{2026-09-14T03:48:11Z}.
 \label{sec:evidencia-servidor}
 
 Servidor: VM Ubuntu Server 26.04.1 LTS en VMware Workstation (red NAT), host
-\texttt{lab3-fdsi-ubuntu}, IP \texttt{192.168.17.129}.
+\texttt{lab3-fdsi-ubuntu}, IP \texttt{192.168.17.129}. Los comandos exactos
+usados en esta sección se listan en el Anexo~\ref{app:comandos}.
 
 \subsection{Identificación del servidor}
-
-\begin{lstlisting}[language=bash]
-hostname
-whoami
-pwd
-\end{lstlisting}
 
 \begin{figure}[H]
     \centering
@@ -476,16 +453,9 @@ pwd
 
 \subsection{Versión de Nginx}
 
-\begin{lstlisting}[language=bash]
-nginx -v
-\end{lstlisting}
-Versión instalada: \texttt{nginx/1.28.3 (Ubuntu)}.
+Obtenida con \texttt{nginx -v}: \texttt{nginx/1.28.3 (Ubuntu)}.
 
 \subsection{Estado del servicio}
-
-\begin{lstlisting}[language=bash]
-systemctl status nginx --no-pager
-\end{lstlisting}
 
 \begin{figure}[H]
     \centering
@@ -496,11 +466,7 @@ systemctl status nginx --no-pager
 
 \subsection{Validación de la configuración}
 
-\begin{lstlisting}[language=bash]
-sudo nginx -t
-\end{lstlisting}
-
-Resultado obtenido:
+Resultado de \texttt{sudo nginx -t}:
 \begin{lstlisting}
 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
@@ -508,11 +474,8 @@ nginx: configuration file /etc/nginx/nginx.conf test is successful
 
 \subsection{Prueba HTTP local}
 
-\begin{lstlisting}[language=bash]
-curl -I http://localhost/
-curl -I http://localhost:5000/health
-curl -I http://localhost:5001/health
-\end{lstlisting}
+Verificada con \texttt{curl -I} sobre el frontend (:80) y el health check de
+cada microservicio (:5000, :5001):
 
 \begin{figure}[H]
     \centering
@@ -557,10 +520,7 @@ server {
 
 \subsection{Permisos del directorio publicado}
 
-\begin{lstlisting}[language=bash]
-ls -la /var/www/lab3
-\end{lstlisting}
-
+Resultado de \texttt{ls -la /var/www/lab3}:
 \begin{lstlisting}
 drwxr-xr-x 2 root root 4096 Sep 14 03:41 .
 -rwxr-xr-x 1 root root 9083 Sep 14 03:44 index.html
@@ -572,9 +532,7 @@ de escritura al proceso del servidor web.
 
 \subsection{Access log}
 
-\begin{lstlisting}[language=bash]
-sudo tail -n 50 /var/log/nginx/lab3_access.log
-\end{lstlisting}
+Extracto de \texttt{sudo tail -n 50 /var/log/nginx/lab3\_access.log}:
 
 \begin{figure}[H]
     \centering
@@ -587,9 +545,7 @@ sudo tail -n 50 /var/log/nginx/lab3_access.log
 
 \subsection{Error log}
 
-\begin{lstlisting}[language=bash]
-sudo tail -n 30 /var/log/nginx/lab3_error.log
-\end{lstlisting}
+Extracto de \texttt{sudo tail -n 30 /var/log/nginx/lab3\_error.log}:
 
 \begin{figure}[H]
     \centering
@@ -899,6 +855,7 @@ images/  (para Overleaf)
 \end{lstlisting}
 
 \section{Comandos de Verificación}
+\label{app:comandos}
 
 \begin{lstlisting}[language=bash]
 # Repositorio (local)
