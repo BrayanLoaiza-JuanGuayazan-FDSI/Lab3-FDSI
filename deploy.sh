@@ -31,15 +31,19 @@ systemctl enable nginx
 # 4. Instalar dependencias Python para microservicios
 echo "[4/6] Instalando dependencias Python..."
 cd services/alerts-api
-pip3 install -r requirements.txt -q
+pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
 cd services/actions-api
-pip3 install -r requirements.txt -q
+pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
 
 # 5. Crear servicios systemd
 echo "[5/6] Configurando servicios systemd..."
 WORKDIR=$(pwd)
+# El proyecto vive dentro del $HOME de quien lo clonó (permisos 750 en Ubuntu
+# moderno); www-data no puede atravesar esa carpeta ni escribir los .log ahi,
+# asi que los servicios corren como el usuario dueño del repo.
+SERVICE_USER=${SUDO_USER:-$(whoami)}
 
 cat > /etc/systemd/system/alerts-api.service << EOF
 [Unit]
@@ -47,7 +51,7 @@ Description=FDSI Lab3 Alerts API
 After=network.target
 
 [Service]
-User=www-data
+User=$SERVICE_USER
 WorkingDirectory=$WORKDIR/services/alerts-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
@@ -63,7 +67,7 @@ Description=FDSI Lab3 Actions API
 After=network.target
 
 [Service]
-User=www-data
+User=$SERVICE_USER
 WorkingDirectory=$WORKDIR/services/actions-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
