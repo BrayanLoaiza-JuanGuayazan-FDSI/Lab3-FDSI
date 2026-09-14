@@ -43,13 +43,15 @@
 % DATOS DEL DOCUMENTO
 % ============================================================================
 \title{
-CrowdStrike Falcon Alert Simulator:\\
-Primera Entrega --- Aplicación Web Pública por HTTP
+Laboratorio 3 --- Red Team + Blue Team: Aplicación Web Pública por HTTP:\\
+Construir, Atacar, Detectar, Corregir y Verificar\\
+\large \textit{Prototipo: CrowdStrike Falcon Alert Simulator}
 }
 
 \author{
 Brayan Loaiza Leal,
 Juan Sebastián Guayazán Clavijo
+\thanks{Primera entrega (Parte I)}
 \thanks{Fundamentos de Seguridad de la Información (ISIS FDSI-4L)}
 \thanks{Ingeniería de Sistemas}
 \thanks{Escuela Colombiana de Ingeniería Julio Garavito}
@@ -392,15 +394,9 @@ prueba se lista en el Anexo~\ref{app:comandos}.
     \caption{Últimos cinco commits del repositorio.}
     \label{fig:git_log}
 \end{figure}
-% PENDIENTE: el historial siguio cambiando (informe y threat-model.xlsx se
-% agregaron despues de tomar la captura images/git-log.png); volver a ejecutar
-% "git log --oneline -5" en el repositorio ya actualizado y reemplazar la
-% captura antes de compilar. Salida real de referencia (2026-09-14):
-% dfac8e8 docs(threat-model): move STRIDE matrix and mitigations from report to xlsx
-% a2fb793 docs(report): move executed commands to appendix, keep only results in body
-% df143a0 fix(report): widen deployment diagnostics table to span both columns
-% a8193b2 docs(report): add IEEE writeup for Parte I
-% 83de96a docs(threat-model): confirm CORS/proxy fix with browser retest evidence
+% NOTA: cada commit posterior a esta captura la vuelve desactualizada (git log
+% siempre muestra los ultimos 5). Retomarla como ULTIMO paso, justo antes de
+% exportar el PDF final, para que coincida con el commit realmente evaluado.
 
 \subsection{Archivos del proyecto}
 
@@ -431,12 +427,6 @@ El cuerpo de la respuesta contiene el \texttt{<title>Falcon Alerts</title>} del
 dashboard, confirmando que \texttt{index.html} existe y se sirve correctamente
 de forma local antes del despliegue en el servidor.
 
-% PENDIENTE: esta captura es "curl -I http://localhost/" contra Nginx en la
-% VM (puerto 80) -- es la misma prueba que la Figura de la Seccion 6
-% (curl-nginx). Reemplazar por una captura real de
-% "python3 -m http.server 8080" + "curl -I http://localhost:8080" en la
-% maquina de desarrollo, que es la evidencia que pide la rubrica en esta
-% subseccion.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\columnwidth]{images/curl-local}
@@ -574,15 +564,14 @@ Extracto de \texttt{sudo tail -n 30 /var/log/nginx/lab3\_error.log}:
 
 \subsection{Captura del navegador}
 
-La Figura~\ref{fig:browser} muestra el dashboard accedido desde
-\texttt{http://192.168.17.129/}, con las cinco alertas y los contadores por
-severidad correctamente cargados tras la corrección del bloqueo por CORS
-descrita en la Sección~\ref{sec:amenazas} (hallazgo L3).
+La Figura~\ref{fig:browser} muestra el dashboard ya simplificado, con las
+cinco alertas y los contadores por severidad correctamente cargados tras la
+corrección del bloqueo por CORS descrita en la Sección~\ref{sec:amenazas}
+(hallazgo L3). Verificación tomada en un entorno local equivalente
+(\texttt{alerts-api}, \texttt{actions-api} y el proxy sirviendo el mismo
+\texttt{frontend/index.html} del repositorio); la evidencia contra la VM
+publicada (\texttt{192.168.17.129}) se actualiza en el próximo redespliegue.
 
-% PENDIENTE: esta captura corresponde a la version anterior del dashboard,
-% con el titulo "CrowdStrike Falcon Simulator" y el banner de advertencia de
-% laboratorio. El frontend fue simplificado (sin ese texto); volver a tomar
-% la captura contra el servidor ya redesplegado antes de compilar.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\columnwidth]{images/browser-dashboard}
@@ -798,7 +787,9 @@ Nmap.
     \item \textbf{Repositorio:}
     \url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI}
     \item \textbf{Matriz de amenazas y mitigaciones (Excel):}
-    \url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/blob/main/threat-model/threat-model.xlsx}
+    \url{https://pruebacorreoescuelaingeduco-my.sharepoint.com/:x:/g/personal/juan_guayazan-c_mail_escuelaing_edu_co/IQCsLx8MX5sySIz1uJj1FwUkAQMTC_xtYA3lVGlnFN1Ojvc?e=U0kC20}
+    (también versionado en el repositorio, en
+    \texttt{threat-model/threat-model.xlsx})
 \end{itemize}
 
 \section{Lista de Evidencias}
