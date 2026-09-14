@@ -626,12 +626,13 @@ El despliegue se completó exitosamente; no obstante, durante el proceso se
 presentaron dos fallos reales, diagnosticados y corregidos, que se documentan
 por su valor metodológico.
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
 \caption{Diagnóstico de problemas durante el despliegue}
 \label{tab:diagnostico}
 \small
-\begin{tabular}{|p{1.7cm}|p{1.5cm}|p{1.7cm}|p{2.2cm}|}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{4.5cm}|>{\raggedright\arraybackslash}p{6.5cm}|}
 \hline
 \textbf{Prueba} &
 \textbf{Esperado} &
@@ -642,14 +643,14 @@ curl localhost & HTTP 200 & HTTP 200 & OK, sin fallo \\
 \hline
 nginx -t & Syntax OK & Syntax OK & OK, sin fallo \\
 \hline
-\texttt{pip3 install} & Instalación OK & \texttt{externally-managed-\linebreak environment} & Python 3.14/Ubuntu 26.04 (PEP 668); corregido con \texttt{--break-system-packages} \\
+\texttt{pip3 install} & Instalación OK & \texttt{externally-managed-environment} & Python 3.14/Ubuntu 26.04 (PEP 668); corregido con \texttt{--break-system-packages} \\
 \hline
 Arranque \texttt{alerts-api}/\texttt{actions-api} & \texttt{active (running)} & \texttt{status=200/CHDIR} & \texttt{User=www-data} sin permiso sobre \texttt{\$HOME} (750); corregido a usuario dueño del repo \\
 \hline
 Carga del dashboard & Alertas visibles & \texttt{Error conectando a la API} & CORS: fetch cruzado de puerto bloqueado; corregido consumiendo vía proxy Nginx \\
 \hline
 \end{tabular}
-\end{table}
+\end{table*}
 
 Los tres últimos casos están documentados en detalle, con evidencia de
 comando/log y corrección aplicada, en \texttt{risk-register.md} y en las
