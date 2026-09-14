@@ -1,0 +1,51 @@
+Evidencia de ejecución local (parcial) — Lab 3 FDSI, Parte I
+Capturado desde: Windows host (repo clonado), sin VM aún.
+Fecha/hora UTC: 2026-09-14T02:35:31Z
+
+=== git status ===
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   README.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        evidence/
+        reports/
+        risk-register.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+=== git log --oneline -5 ===
+5798583 feat: complete microservices architecture - alerts API, actions API, frontend dashboard, nginx config and deploy script
+4722721 feat: initial project structure - alerts API skeleton and frontend
+b8a1058 Initial commit
+
+=== find . -maxdepth 3 -type f ===
+./.gitignore
+./deploy.sh
+./evidence/blue/.gitkeep
+./evidence/red/.gitkeep
+./frontend/index.html
+./nginx/lab3-fdsi.conf
+./README.md
+./reports/zap-passive/.gitkeep
+./risk-register.md
+./services/actions-api/app.py
+./services/actions-api/requirements.txt
+./services/alerts-api/app.py
+./services/alerts-api/requirements.txt
+
+NOTA: Commit evaluado para esta entrega = 5798583 (HEAD en el momento de esta
+captura; los archivos nuevos de esta sesión -evidence/, reports/, risk-register.md,
+diagrams/- aún no están commiteados).
+
+PENDIENTE (requiere Python en el host o VM Ubuntu):
+  python3 -m http.server 8080     # dentro de frontend/
+  curl -I http://localhost:8080   # esperado: HTTP/1.0 200 OK
+  curl http://localhost:8080      # esperado: contenido de index.html
+Se completará dentro de la VM Ubuntu Server (Parte II de esta misma sesión de trabajo),
+donde python3 está disponible de fábrica.

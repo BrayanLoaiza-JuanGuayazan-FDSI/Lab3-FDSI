@@ -1,0 +1,92 @@
+Evidencia del servidor y Nginx — Lab 3 FDSI, Parte I
+Host: lab3-fdsi-ubuntu (VM Ubuntu Server 26.04.1 LTS en VMware Workstation, red NAT)
+IP: 192.168.17.129
+Fecha/hora UTC de despliegue: 2026-09-14T03:48:11Z
+
+=== hostnamectl ===
+Operating System: Ubuntu 26.04.1 LTS
+Kernel: Linux 7.0.0-31-generic
+Architecture: x86-64
+Virtualization: vmware
+
+=== ip -br address ===
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+ens33            UP             192.168.17.129/24 metric 100 fe80::20c:29ff:fe26:57b2/64
+
+=== systemctl status alerts-api / actions-api ===
+alerts-api.service  - active (running), Serving Flask app 'app', Debug mode: on
+actions-api.service - active (running), Serving Flask app 'app', Debug mode: on
+(corrigido: User=fdsi en vez de www-data, ver nota de incidencia abajo)
+
+=== curl -I http://localhost:5000/health ===
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.14.4
+Content-Type: application/json
+Content-Length: 66
+Server: FalconSim/1.0
+Connection: close
+
+=== curl -I http://localhost:5001/health ===
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.14.4
+Content-Type: application/json
+Content-Length: 66
+Connection: close
+
+=== curl -I http://localhost/ ===
+HTTP/1.1 200 OK
+Server: nginx/1.28.3 (Ubuntu)
+Content-Type: text/html
+Content-Length: 9083
+ETag: "6aa76d9e-237b"
+Accept-Ranges: bytes
+
+=== curl http://localhost/api/alerts/alerts (vía proxy Nginx) ===
+200 OK — devuelve las 5 alertas ficticias precargadas (total: 5)
+
+=== /etc/nginx/sites-available/lab3-fdsi ===
+server {
+    listen 80;
+    server_name _;
+    access_log /var/log/nginx/lab3_access.log;
+    error_log  /var/log/nginx/lab3_error.log;
+    root /var/www/lab3;
+    index index.html;
+    location / { try_files $uri $uri/ /index.html; }
+    location /api/alerts/  { proxy_pass http://127.0.0.1:5000/; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+    location /api/actions/ { proxy_pass http://127.0.0.1:5001/; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+}
+
+=== ls -la /var/www/lab3 (permisos del directorio publicado) ===
+drwxr-xr-x 2 root root 4096 Sep 14 03:41 .
+drwxr-xr-x 4 root root 4096 Sep 14 03:41 ..
+-rwxr-xr-x 1 root root 9083 Sep 14 03:44 index.html
+
+=== sudo tail -n 20 /var/log/nginx/lab3_access.log ===
+127.0.0.1 - - [14/Sep/2026:03:44:36 +0000] "GET / HTTP/1.1" 200 9083 "-" "curl/8.18.0"
+127.0.0.1 - - [14/Sep/2026:03:50:39 +0000] "HEAD / HTTP/1.1" 200 0 "-" "curl/8.18.0"
+127.0.0.1 - - [14/Sep/2026:03:50:50 +0000] "GET /api/alerts/alerts HTTP/1.1" 200 1711 "-" "curl/8.18.0"
+
+=== sudo tail -n 20 /var/log/nginx/lab3_error.log ===
+(vacío — sin errores)
+
+=== sudo nginx -t ===
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+=== Incidencia durante el despliegue (documentar en el informe) ===
+1. pip3 install fallo con "externally-managed-environment" (PEP 668, Python 3.14
+   en Ubuntu 26.04). Corregido agregando --break-system-packages en deploy.sh.
+2. alerts-api/actions-api fallaron al iniciar: "Failed at step CHDIR spawning
+   /usr/bin/python3: Permission denied". Causa: el unit systemd generado por
+   deploy.sh definia User=www-data, pero el repo esta clonado en /home/fdsi
+   (permisos 750 en Ubuntu moderno) -> www-data no puede atravesar el directorio
+   ni escribir alerts.log/actions.log ahi. Corregido cambiando el usuario del
+   servicio a "fdsi" (dueño real del repo) tanto en los unit files activos como
+   en deploy.sh (ahora usa ${SUDO_USER:-$(whoami)}).
+
+Nota de seguridad: ambos microservicios corren con Debug mode: on (Werkzeug
+debugger habilitado) — vulnerabilidad intencional documentada en risk-register.md
+(H4 - Information Disclosure) y en las limitaciones conocidas del README.
+
+PENDIENTE: captura de navegador (http://192.168.17.129/) mostrando el dashboard.
