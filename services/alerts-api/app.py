@@ -8,7 +8,6 @@ from flask import Flask, jsonify, request
 import json
 import datetime
 import logging
-import os
 
 logging.basicConfig(
     filename='alerts.log',
@@ -80,7 +79,7 @@ ACTIONS_LOG = []
 
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {request.remote_addr} UA:{request.headers.get('User-Agent','')}")
+    logging.info(f"REQUEST {request.method} {request.path} from {request.headers.get('X-Real-IP', request.remote_addr)} UA:{request.headers.get('User-Agent','')}")
 
 @app.after_request
 def log_response(response):
@@ -144,10 +143,5 @@ def create_alert():
     logging.info(f"NEW ALERT created: {new_alert['id']} severity:{new_alert['severity']}")
     return jsonify(new_alert), 201
 
-@app.route('/debug/env', methods=['GET'])
-def debug_env():
-    # Vulnerabilidad intencional: expone variables de entorno
-    return jsonify(dict(os.environ))
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

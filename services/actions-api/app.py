@@ -43,9 +43,14 @@ ACTIONS = [
     }
 ]
 
+def client_ip():
+    # Nginx sobrescribe X-Real-IP con la IP real del cliente; el servicio solo
+    # escucha en loopback, por lo que este header no puede venir del cliente.
+    return request.headers.get('X-Real-IP', request.remote_addr)
+
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {request.remote_addr}")
+    logging.info(f"REQUEST {request.method} {request.path} from {client_ip()}")
 
 @app.route('/', methods=['GET'])
 def index():
@@ -95,11 +100,12 @@ def create_action():
         "analyst": data.get("analyst", "anonymous"),
         "action": action_type,
         "notes": data.get("notes", ""),
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "source_ip": client_ip()
     }
     ACTIONS.append(new_action)
-    logging.info(f"ACTION {new_action['id']}: {action_type} on {new_action['alert_id']} by {new_action['analyst']}")
+    logging.info(f"ACTION {new_action['id']}: {action_type} on {new_action['alert_id']} by {new_action['analyst']} from {new_action['source_ip']}")
     return jsonify(new_action), 201
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='127.0.0.1', port=5001, debug=False)
