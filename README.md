@@ -16,7 +16,7 @@ Prototipo que simula la recepción, clasificación y registro de alertas fictici
 - Registrar acciones de respuesta realizadas por analistas
 - Servir un dashboard web de monitoreo
 
-El sistema expone vulnerabilidades intencionales (sin auth, sin TLS, endpoint `/debug/env`) para que el Red Team las identifique y el Blue Team las mitigue en laboratorios posteriores.
+El sistema conserva limitaciones intencionales (sin auth, sin TLS) para que el Red Team las identifique y el Blue Team las mitigue en laboratorios posteriores. En la Parte 2 se redujo la superficie de ataque (ver "Estado de la entrega").
 
 ---
 
@@ -102,6 +102,9 @@ cd Lab3-FDSI
 chmod +x deploy.sh
 sudo ./deploy.sh
 
+# Con firewall (UFW): permite 80/tcp solo desde el segmento del laboratorio + SSH
+sudo LAB_CIDR=192.168.17.0/24 ./deploy.sh
+
 # Verificar
 nginx -v
 systemctl status nginx --no-pager
@@ -117,8 +120,8 @@ curl -I http://localhost
 VM Ubuntu Server 26.04.1 LTS en VMware Workstation (red NAT, alcanzable desde el host):
 
 `http://192.168.17.129/`
-Alerts API: `http://192.168.17.129:5000/alerts`
-Actions API: `http://192.168.17.129:5001/actions`
+Alerts API (vía proxy Nginx): `http://192.168.17.129/api/alerts/alerts`
+Actions API (vía proxy Nginx): `http://192.168.17.129/api/actions/actions`
 
 > Nota: IP interna de laboratorio (VMware NAT), no una IP pública de Internet. Se
 > actualizará si el docente asigna una instancia en la nube para la Parte II.
@@ -126,6 +129,8 @@ Actions API: `http://192.168.17.129:5001/actions`
 ---
 
 ## Endpoints de la API
+
+Los microservicios escuchan solo en `127.0.0.1` (puertos 5000 y 5001) y se consumen a través de Nginx (`/api/alerts/` y `/api/actions/`).
 
 ### Alerts API (puerto 5000)
 
@@ -136,7 +141,6 @@ Actions API: `http://192.168.17.129:5001/actions`
 | GET | `/alerts/severity/{level}` | Filtrar por severidad |
 | GET | `/alerts?status=open` | Filtrar por estado |
 | POST | `/alerts` | Crear nueva alerta |
-| GET | `/debug/env` | ⚠️ Expone variables de entorno (vulnerabilidad intencional) |
 
 ### Actions API (puerto 5001)
 
@@ -160,16 +164,21 @@ Actions API: `http://192.168.17.129:5001/actions`
 
 ## Modelo de amenazas
 
-Ver [`risk-register.md`](risk-register.md) para el DFD, activos, actores, límites de
-confianza, superficie de ataque y las seis hipótesis STRIDE (una por categoría) con su
-evidencia y mitigación propuesta. El diagrama de flujo de datos se encuentra en
-`diagrams/dfd-lab3.png`.
+Ver [`risk-register.md`](risk-register.md) para activos, actores, límites de confianza y
+superficie de ataque. Las matrices de amenazas STRIDE, mitigaciones y la cadena
+gap → riesgo → mejora están en `threat-model/threat-model.xlsx`. Diagramas de flujo de datos:
+`diagrams/dfd-lab3.png` (arquitectura inicial) y `diagrams/dfd-lab3-fortalecida.png`
+(arquitectura fortalecida).
 
 ## Estado de la entrega
 
 - **Parte I (actual):** construcción, publicación, estructura de repositorio, evidencia
   de ejecución local y modelo de amenazas inicial.
-- **Parte II (pendiente):** despliegue verificado en VM Ubuntu Server, reconocimiento
+- **Parte 2 (en curso):** reducción de superficie de ataque implementada en el repo (servicios
+  solo en `127.0.0.1`, UFW opcional vía `LAB_CIDR` en `deploy.sh`, sin `/debug/env` ni
+  `debug=True`, `source_ip` en las acciones, hardening de Nginx). Pendiente desplegarlo en la VM
+  y hacer el retest.
+- **Ronda Red/Blue Team (pendiente):** despliegue verificado en VM Ubuntu Server, reconocimiento
   Red Team (Nmap/curl/ZAP pasivo), captura y correlación Blue Team (tcpdump/logs),
   hardening de Nginx y retest. Evidencia en `evidence/red/`, `evidence/blue/` y
   `reports/zap-passive/`.
@@ -180,11 +189,11 @@ evidencia y mitigación propuesta. El diagrama de flujo de datos se encuentra en
 
 - ❌ Sin autenticación en ningún endpoint
 - ❌ Sin HTTPS / TLS
-- ❌ Endpoint `/debug/env` expone variables de entorno del servidor
 - ❌ Sin validación de entrada en campos de texto libre
 - ❌ Sin rate limiting
-- ❌ Sin cabeceras de seguridad HTTP (CSP, HSTS, X-Frame-Options)
-- ❌ Sin cabeceras CORS en las APIs Flask (`/alerts`, `/actions` en :5000/:5001 siguen accesibles sin autenticación vía curl/servidor a servidor; el dashboard ahora las consume a través del proxy de Nginx en `/api/alerts/` para evitar el bloqueo del navegador por same-origin policy — ver hallazgo L3 en `risk-register.md`)
+- ❌ Sin CSP ni HSTS (HSTS requiere HTTPS); solo se aplicaron `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`
+- ❌ Servidor de desarrollo de Flask (sin gunicorn)
+- ❌ Los endpoints siguen sin autenticación a través del proxy de Nginx (`/api/alerts/`, `/api/actions/`)
 - ❌ Datos almacenados en memoria (sin persistencia)
 - ❌ Logs sin cifrar ni control de acceso
 
