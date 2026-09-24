@@ -115,6 +115,41 @@ curl -I http://localhost
 
 ---
 
+## Variables y reproducción de las pruebas
+
+```bash
+export TARGET_IP=192.168.17.129          # IP de la VM autorizada
+export TARGET_URL=http://$TARGET_IP
+export LAB_CIDR=192.168.17.0/24          # segmento autorizado (debe incluir a los atacantes)
+date -u +%Y-%m-%dT%H:%M:%SZ
+```
+
+**Red Team (desde Kali, solo contra `TARGET_IP`)** — salidas en `evidence/red/` y `reports/zap-passive/`:
+
+```bash
+mkdir -p evidence/red
+date -u +%Y-%m-%dT%H:%M:%SZ | tee evidence/red/start.txt
+nmap -Pn -sV -p 80 "$TARGET_IP" -oA evidence/red/nmap_port80
+nmap -Pn -sV -p 80,5000,5001 "$TARGET_IP" -oA evidence/red/nmap_ports_extra
+curl -i "$TARGET_URL/" | tee evidence/red/curl_home.txt
+curl -I "$TARGET_URL/api/alerts/alerts" | tee evidence/red/curl_headers.txt
+# ZAP: Manual Explore sobre TARGET_URL, sin Active Scan; exportar el reporte HTML
+```
+
+**Blue Team (en el servidor)** — salidas en `evidence/blue/`:
+
+```bash
+sudo timeout 60 tcpdump -i any -nn -s0 -w /tmp/lab3-http.pcap 'tcp port 80'   # mientras Red Team genera tráfico
+sudo tail -n 50 /var/log/nginx/lab3_access.log
+sudo tail -n 30 /var/log/nginx/lab3_error.log
+sudo journalctl -u nginx --since '20 minutes ago' --no-pager
+python3 evidence/blue/detect_404.py /var/log/nginx/lab3_access.log           # regla: 5+ 404 por IP en 5 min
+```
+
+**Retest** — repetir los mismos comandos de Red Team guardando en `evidence/retest/` y comparar con `evidence/red/` (ver `evidence/retest/comparacion-antes-despues.md`). La regla de detección, sus limitaciones y falsos positivos están en `evidence/blue/detection-rule.md`.
+
+---
+
 ## URL publicada
 
 VM Ubuntu Server 26.04.1 LTS en VMware Workstation (red NAT, alcanzable desde el host):
@@ -165,23 +200,17 @@ Los microservicios escuchan solo en `127.0.0.1` (puertos 5000 y 5001) y se consu
 ## Modelo de amenazas
 
 Ver [`risk-register.md`](risk-register.md) para activos, actores, límites de confianza y
-superficie de ataque. Las matrices de amenazas STRIDE, mitigaciones y la cadena
+superficie de ataque; el estado de cada riesgo (corregido, mitigado, aceptado o pendiente) está ahí también. Las matrices de amenazas STRIDE, mitigaciones y la cadena
 gap → riesgo → mejora están en `threat-model/threat-model.xlsx`. Diagramas de flujo de datos:
 `diagrams/dfd-lab3.png` (arquitectura inicial) y `diagrams/dfd-lab3-fortalecida.png`
 (arquitectura fortalecida).
 
 ## Estado de la entrega
 
-- **Parte I (actual):** construcción, publicación, estructura de repositorio, evidencia
-  de ejecución local y modelo de amenazas inicial.
-- **Parte 2 (en curso):** reducción de superficie de ataque implementada en el repo (servicios
-  solo en `127.0.0.1`, UFW opcional vía `LAB_CIDR` en `deploy.sh`, sin `/debug/env` ni
-  `debug=True`, `source_ip` en las acciones, hardening de Nginx). Pendiente desplegarlo en la VM
-  y hacer el retest.
-- **Ronda Red/Blue Team (pendiente):** despliegue verificado en VM Ubuntu Server, reconocimiento
-  Red Team (Nmap/curl/ZAP pasivo), captura y correlación Blue Team (tcpdump/logs),
-  hardening de Nginx y retest. Evidencia en `evidence/red/`, `evidence/blue/` y
-  `reports/zap-passive/`.
+- **Parte I:** construcción, publicación, estructura del repositorio, evidencia de ejecución local y modelo de amenazas inicial (informe en `report/`).
+- **Parte 2:** superficie de ataque reducida, **desplegada y verificada en la VM**: servicios solo en `127.0.0.1`, UFW limitado a `LAB_CIDR`, sin `/debug/env` ni `debug=True`, hardening de Nginx. Evidencia en `evidence/retest/`.
+- **Ronda Red/Blue Team:** ejecutada. Evidencia en `evidence/red/`, `evidence/blue/`, `reports/zap-passive/` y `evidence/purple-team-timeline.md`.
+- **Pendiente (Lab 4/5):** HTTPS/TLS (plan en `threat-model/threat-model.xlsx`, hoja `Improvements`, fila G05), autenticación y RBAC, Content-Security-Policy, rate limiting y servidor WSGI de producción. La prueba en la VM de `source_ip` en las acciones también está pendiente.
 
 ---
 
