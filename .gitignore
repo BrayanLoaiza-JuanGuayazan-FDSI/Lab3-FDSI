@@ -9,3 +9,7 @@ venv/
 *.out
 *.toc
 *.synctex.gz
+
+# Material del curso (contiene datos de otros estudiantes)
+Material/
+material*.xlsx
