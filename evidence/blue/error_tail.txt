@@ -1,0 +1,1 @@
+2026/09/14 05:44:40 [error] 3420#3420: *98 recv() failed (104: Connection reset by peer) while reading response header from upstream, client: 192.168.17.1, server: _, request: "GET /api/alerts/alerts HTTP/1.1", upstream: "http://127.0.0.1:5000/alerts", host: "192.168.17.129", referrer: "http://192.168.17.129/"

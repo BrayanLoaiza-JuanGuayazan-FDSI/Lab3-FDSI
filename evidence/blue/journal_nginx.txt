@@ -1,0 +1,4 @@
+-- No entries --
+sep 24 03:54:53 lab3-fdsi-ubuntu systemd[1]: Reloading nginx.service - A high performance web server and a reverse proxy server...
+sep 24 03:54:53 lab3-fdsi-ubuntu nginx[4104]: 2026/09/24 03:54:53 [notice] 4104#4104: signal process started
+sep 24 03:54:53 lab3-fdsi-ubuntu systemd[1]: Reloaded nginx.service - A high performance web server and a reverse proxy server.
