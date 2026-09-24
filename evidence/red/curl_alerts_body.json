@@ -1,0 +1,60 @@
+{
+  "alerts": [
+    {
+      "created_at": "2026-09-13T08:15:00Z",
+      "description": "Suspicious executable detected: invoice_Q3.exe",
+      "host": "WORKSTATION-42",
+      "id": "ALT-001",
+      "ioc": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "severity": "HIGH",
+      "status": "open",
+      "type": "MalwareDetected",
+      "user": "john.doe"
+    },
+    {
+      "created_at": "2026-09-13T09:30:00Z",
+      "description": "Abnormal SMB traffic from internal host",
+      "host": "SERVER-DC01",
+      "id": "ALT-002",
+      "ioc": "ip:192.168.1.105",
+      "severity": "CRITICAL",
+      "status": "open",
+      "type": "LateralMovement",
+      "user": "SYSTEM"
+    },
+    {
+      "created_at": "2026-09-13T02:47:00Z",
+      "description": "Sudo command executed outside business hours",
+      "host": "LAPTOP-007",
+      "id": "ALT-003",
+      "ioc": "process:sudo bash",
+      "severity": "MEDIUM",
+      "status": "investigating",
+      "type": "PrivilegeEscalation",
+      "user": "jane.smith"
+    },
+    {
+      "created_at": "2026-09-12T23:10:00Z",
+      "description": "Multiple failed login attempts from external IP",
+      "host": "VPN-GW01",
+      "id": "ALT-004",
+      "ioc": "ip:203.0.113.45",
+      "severity": "LOW",
+      "status": "closed",
+      "type": "FailedLogin",
+      "user": "unknown"
+    },
+    {
+      "created_at": "2026-09-13T11:05:00Z",
+      "description": "Unusual large file transfer to external storage",
+      "host": "FILESERVER-01",
+      "id": "ALT-005",
+      "ioc": "domain:dropbox.com",
+      "severity": "HIGH",
+      "status": "open",
+      "type": "DataExfiltration",
+      "user": "contractor01"
+    }
+  ],
+  "total": 5
+}

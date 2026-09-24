@@ -1,0 +1,4 @@
+# Nmap 7.99 scan initiated Wed Sep 23 22:59:52 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -p 80,5000,5001 -oA evidence/red/nmap_ports_extra 192.168.17.129
+Host: 192.168.17.129 ()	Status: Up
+Host: 192.168.17.129 ()	Ports: 80/open/tcp//http//nginx 1.28.3 (Ubuntu)/, 5000/open/tcp//http//Werkzeug httpd 3.1.8 (Python 3.14.4)/, 5001/open/tcp//http//Werkzeug httpd 3.1.8 (Python 3.14.4)/
+# Nmap done at Wed Sep 23 23:00:09 2026 -- 1 IP address (1 host up) scanned in 17.04 seconds

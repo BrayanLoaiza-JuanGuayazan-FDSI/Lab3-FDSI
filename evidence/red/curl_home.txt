@@ -1,0 +1,168 @@
+HTTP/1.1 200 OK
+Server: nginx/1.28.3 (Ubuntu)
+Date: Thu, 24 Sep 2026 03:04:40 GMT
+Content-Type: text/html
+Content-Length: 9050
+Last-Modified: Mon, 14 Sep 2026 04:35:06 GMT
+Connection: keep-alive
+ETag: "6aa7797a-235a"
+Accept-Ranges: bytes
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrowdStrike Falcon Simulator — FDSI Lab 3</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+    header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 18px; color: #f0883e; font-weight: 600; }
+    header span { font-size: 12px; color: #8b949e; background: #21262d; padding: 3px 8px; border-radius: 12px; border: 1px solid #30363d; }
+    .warning { background: #3d2b00; border: 1px solid #f0883e; color: #f0883e; padding: 10px 32px; font-size: 12px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 32px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-card .num { font-size: 28px; font-weight: 700; }
+    .stat-card .label { font-size: 12px; color: #8b949e; margin-top: 4px; }
+    .num.critical { color: #f85149; }
+    .num.high { color: #f0883e; }
+    .num.medium { color: #e3b341; }
+    .num.low { color: #3fb950; }
+    .panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; margin-bottom: 16px; }
+    .panel-header { padding: 12px 16px; border-bottom: 1px solid #30363d; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 10px 16px; text-align: left; color: #8b949e; font-weight: 500; border-bottom: 1px solid #21262d; }
+    td { padding: 10px 16px; border-bottom: 1px solid #21262d; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1c2128; }
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge.CRITICAL { background: #3d0f0f; color: #f85149; border: 1px solid #f85149; }
+    .badge.HIGH { background: #3d1f00; color: #f0883e; border: 1px solid #f0883e; }
+    .badge.MEDIUM { background: #2d2200; color: #e3b341; border: 1px solid #e3b341; }
+    .badge.LOW { background: #0d2c0d; color: #3fb950; border: 1px solid #3fb950; }
+    .badge.open { background: #1f2d1f; color: #3fb950; }
+    .badge.investigating { background: #1f2230; color: #58a6ff; }
+    .badge.closed { background: #21262d; color: #8b949e; }
+    .api-section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .api-section h3 { font-size: 14px; margin-bottom: 12px; color: #58a6ff; }
+    .endpoint { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; font-size: 12px; font-family: monospace; }
+    .method { padding: 2px 6px; border-radius: 4px; font-weight: 700; min-width: 40px; text-align: center; }
+    .method.GET { background: #0d2c0d; color: #3fb950; }
+    .method.POST { background: #1f2d1f; color: #58a6ff; }
+    .endpoint-path { color: #c9d1d9; }
+    .endpoint-desc { color: #8b949e; margin-left: 8px; }
+    footer { text-align: center; padding: 16px; font-size: 11px; color: #484f58; border-top: 1px solid #21262d; margin-top: 24px; }
+    .refresh-btn { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .refresh-btn:hover { background: #30363d; }
+    #status { font-size: 11px; color: #8b949e; }
+    .mono { font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🦅 CrowdStrike Falcon Simulator</h1>
+  <span>FDSI Lab 3 — Red Team vs Blue Team</span>
+  <span style="margin-left:auto; color:#f85149">⚠ HTTP · SIN TLS · SIN AUTH</span>
+</header>
+
+<div class="warning">
+  ⚠ ENTORNO VULNERABLE INTENCIONAL — Sin autenticación, sin cifrado, sin controles de acceso. Uso exclusivo para laboratorio académico FDSI-4L 2026-2.
+</div>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat-card"><div class="num critical" id="cnt-critical">-</div><div class="label">CRITICAL</div></div>
+    <div class="stat-card"><div class="num high" id="cnt-high">-</div><div class="label">HIGH</div></div>
+    <div class="stat-card"><div class="num medium" id="cnt-medium">-</div><div class="label">MEDIUM</div></div>
+    <div class="stat-card"><div class="num low" id="cnt-low">-</div><div class="label">LOW</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      Alertas activas
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="status">cargando...</span>
+        <button class="refresh-btn" onclick="loadAlerts()">↻ Actualizar</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Severidad</th><th>Tipo</th><th>Host</th><th>Usuario</th><th>Estado</th><th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody id="alerts-body">
+        <tr><td colspan="7" style="text-align:center;color:#8b949e;padding:24px">Cargando alertas...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="api-section">
+    <h3>Endpoints disponibles — Alerts API (:5000)</h3>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/alerts</span><span class="endpoint-desc">Listar todas las alertas</span></div>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/alerts/{id}</span><span class="endpoint-desc">Detalle de una alerta</span></div>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/alerts/severity/{level}</span><span class="endpoint-desc">Filtrar por severidad (CRITICAL, HIGH, MEDIUM, LOW)</span></div>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/alerts?status=open</span><span class="endpoint-desc">Filtrar por estado</span></div>
+    <div class="endpoint"><span class="method POST">POST</span><span class="endpoint-path">/alerts</span><span class="endpoint-desc">Crear nueva alerta (body JSON)</span></div>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/debug/env</span><span class="endpoint-desc" style="color:#f85149">⚠ Expone variables de entorno (vulnerabilidad intencional)</span></div>
+  </div>
+
+  <div class="api-section">
+    <h3>Endpoints disponibles — Actions API (:5001)</h3>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/actions</span><span class="endpoint-desc">Listar todas las acciones registradas</span></div>
+    <div class="endpoint"><span class="method GET">GET</span><span class="endpoint-path">/actions/alert/{alert_id}</span><span class="endpoint-desc">Acciones sobre una alerta específica</span></div>
+    <div class="endpoint"><span class="method POST">POST</span><span class="endpoint-path">/actions</span><span class="endpoint-desc">Registrar una acción (investigate / escalate / contain / close / reopen)</span></div>
+  </div>
+
+</div>
+
+<footer>
+  Lab 3 FDSI — Brayan Loaiza Leal · Juan Sebastián Guayazán Clavijo — ECI 2026-2
+</footer>
+
+<script>
+const ALERTS_API = '/api/alerts';
+
+async function loadAlerts() {
+  document.getElementById('status').textContent = 'actualizando...';
+  try {
+    const res = await fetch(ALERTS_API + '/alerts');
+    const data = await res.json();
+    const alerts = data.alerts || [];
+
+    const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    alerts.forEach(a => { if (counts[a.severity] !== undefined) counts[a.severity]++; });
+    document.getElementById('cnt-critical').textContent = counts.CRITICAL;
+    document.getElementById('cnt-high').textContent = counts.HIGH;
+    document.getElementById('cnt-medium').textContent = counts.MEDIUM;
+    document.getElementById('cnt-low').textContent = counts.LOW;
+
+    const tbody = document.getElementById('alerts-body');
+    tbody.innerHTML = alerts.map(a => `
+      <tr>
+        <td class="mono">${a.id}</td>
+        <td><span class="badge ${a.severity}">${a.severity}</span></td>
+        <td>${a.type}</td>
+        <td class="mono">${a.host}</td>
+        <td class="mono">${a.user}</td>
+        <td><span class="badge ${a.status}">${a.status}</span></td>
+        <td class="mono">${a.created_at.replace('T',' ').replace('Z','')}</td>
+      </tr>`).join('');
+
+    document.getElementById('status').textContent = `${alerts.length} alertas · ${new Date().toLocaleTimeString()}`;
+  } catch(e) {
+    document.getElementById('status').textContent = 'Error conectando a la API';
+    document.getElementById('alerts-body').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:#f85149;padding:24px">No se pudo conectar a ' + ALERTS_API + '/alerts</td></tr>';
+  }
+}
+
+loadAlerts();
+setInterval(loadAlerts, 30000);
+</script>
+</body>
+</html>
