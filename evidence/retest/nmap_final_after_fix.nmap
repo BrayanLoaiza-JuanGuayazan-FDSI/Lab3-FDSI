@@ -1,0 +1,12 @@
+# Nmap 7.99 scan initiated Thu Sep 24 00:03:21 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -p 80,5000,5001 -oA evidence/retest/nmap_final_after_fix 192.168.17.129
+Nmap scan report for 192.168.17.129
+Host is up (0.00041s latency).
+
+PORT     STATE    SERVICE       VERSION
+80/tcp   open     http          nginx
+5000/tcp filtered upnp
+5001/tcp filtered commplex-link
+MAC Address: 00:0C:29:26:57:B2 (VMware)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Thu Sep 24 00:03:29 2026 -- 1 IP address (1 host up) scanned in 8.04 seconds

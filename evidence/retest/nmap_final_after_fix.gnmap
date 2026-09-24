@@ -1,0 +1,4 @@
+# Nmap 7.99 scan initiated Thu Sep 24 00:03:21 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -p 80,5000,5001 -oA evidence/retest/nmap_final_after_fix 192.168.17.129
+Host: 192.168.17.129 ()	Status: Up
+Host: 192.168.17.129 ()	Ports: 80/open/tcp//http//nginx/, 5000/filtered/tcp//upnp///, 5001/filtered/tcp//commplex-link///
+# Nmap done at Thu Sep 24 00:03:29 2026 -- 1 IP address (1 host up) scanned in 8.04 seconds
