@@ -1,0 +1,10 @@
+# Nmap 7.99 scan initiated Wed Sep 23 23:55:30 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -p 80 -oA /home/kali/Lab3-FDSI/evidence/retest/nmap_port80_after 192.168.17.129
+Nmap scan report for 192.168.17.129
+Host is up (0.00078s latency).
+
+PORT   STATE SERVICE VERSION
+80/tcp open  http    nginx
+MAC Address: 00:0C:29:26:57:B2 (VMware)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Wed Sep 23 23:55:37 2026 -- 1 IP address (1 host up) scanned in 7.15 seconds

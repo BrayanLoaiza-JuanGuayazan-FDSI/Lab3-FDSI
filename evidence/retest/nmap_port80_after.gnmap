@@ -1,0 +1,4 @@
+# Nmap 7.99 scan initiated Wed Sep 23 23:55:30 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -p 80 -oA /home/kali/Lab3-FDSI/evidence/retest/nmap_port80_after 192.168.17.129
+Host: 192.168.17.129 ()	Status: Up
+Host: 192.168.17.129 ()	Ports: 80/open/tcp//http//nginx/
+# Nmap done at Wed Sep 23 23:55:37 2026 -- 1 IP address (1 host up) scanned in 7.15 seconds
