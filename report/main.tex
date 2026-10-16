@@ -51,7 +51,7 @@ Construir, Atacar, Detectar, Corregir y Verificar\\
 \author{
 Brayan Loaiza Leal,
 Juan Sebastián Guayazán Clavijo
-\thanks{Primera entrega (Parte I)}
+\thanks{Entrega consolidada --- Parte I y Parte II}
 \thanks{Fundamentos de Seguridad de la Información (ISIS FDSI-4L)}
 \thanks{Ingeniería de Sistemas}
 \thanks{Escuela Colombiana de Ingeniería Julio Garavito}
@@ -75,24 +75,29 @@ CrowdStrike Falcon Alert Simulator
 % RESUMEN
 % ============================================================================
 \begin{abstract}
-Este documento presenta la primera entrega del Laboratorio 03 de Fundamentos
-de Seguridad de la Información, correspondiente al reto Secure Product
-Challenge. El equipo seleccionó la Opción 1 (automatización de incidentes de
-CrowdStrike Falcon) y desarrolló un prototipo denominado \textit{CrowdStrike
-Falcon Alert Simulator}: dos microservicios Flask (\texttt{alerts-api} y
-\texttt{actions-api}) que simulan la recepción, consulta y registro de
-acciones sobre alertas ficticias de seguridad, junto con un dashboard estático
-servido por Nginx. La primera versión establece una línea base deliberadamente
-insegura y controlada --- HTTP sin TLS, sin autenticación --- utilizando
-únicamente información ficticia, desplegada sobre una VM Ubuntu Server
-26.04.1 LTS en VMware Workstation. El trabajo comprende la descripción del
-problema, la arquitectura implementada, la estructura del repositorio, las
-evidencias de ejecución local y del servidor, un fallo real de despliegue
-encontrado y corregido (bloqueo por CORS entre el dashboard y la API), y un
-modelo inicial de amenazas STRIDE con una hipótesis por cada una de las seis
-categorías, derivada directamente del código fuente de los microservicios.
-Las pruebas y evidencias presentadas se limitan al entorno autorizado para el
-laboratorio y utilizan exclusivamente datos ficticios.
+Este documento presenta la entrega consolidada (Parte I y Parte II) del
+Laboratorio 03 de Fundamentos de Seguridad de la Información, correspondiente
+al reto Secure Product Challenge. El equipo seleccionó la Opción 1
+(automatización de incidentes de CrowdStrike Falcon) y desarrolló un
+prototipo denominado \textit{CrowdStrike Falcon Alert Simulator}: dos
+microservicios Flask (\texttt{alerts-api} y \texttt{actions-api}) que simulan
+la recepción, consulta y registro de acciones sobre alertas ficticias de
+seguridad, junto con un dashboard estático servido por Nginx, desplegado
+sobre una VM Ubuntu Server 26.04.1 LTS en VMware Workstation. La Parte I
+construyó y publicó una línea base deliberadamente insegura (HTTP sin TLS,
+sin autenticación) y un modelo inicial de amenazas STRIDE con una hipótesis
+por cada una de las seis categorías. La Parte II ejecuta el ciclo completo
+Atacar $\rightarrow$ Detectar $\rightarrow$ Corregir $\rightarrow$ Verificar:
+reconocimiento Red Team con Nmap, curl y OWASP ZAP en modo pasivo desde una
+estación Kali Linux; captura de tráfico y una regla de detección de Blue Team
+validada contra el log real del servidor; hardening de Nginx, corrección del
+código de los microservicios (bind a \texttt{127.0.0.1}, remoción de
+\texttt{debug=True} y de \texttt{/debug/env}) y un firewall UFW restringido
+al segmento del laboratorio; y un retest final que reduce la superficie de
+ataque expuesta a la red de tres puertos con huella de versión completa a un
+solo puerto sin versión, sin romper la funcionalidad del dashboard ni de las
+APIs. Las pruebas y evidencias presentadas se limitan al entorno autorizado
+para el laboratorio y utilizan exclusivamente datos ficticios.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -695,6 +700,335 @@ se listan junto con las amenazas que atienden en la hoja \textit{Mitigation
 Candidates} de \texttt{threat-model/threat-model.xlsx}.
 
 % ============================================================================
+% 10. FASE C --- RECONOCIMIENTO RED TEAM
+% ============================================================================
+\section{Reconocimiento Red Team (Fase C)}
+\label{sec:redteam}
+
+Reconocimiento ejecutado desde una estación Kali Linux (\texttt{192.168.17.130})
+contra la VM publicada, antes de aplicar el hardening de la Fase E. Variables
+de entorno acordadas: \texttt{TARGET\_IP=192.168.17.129},
+\texttt{TARGET\_URL=http://\$TARGET\_IP}.
+
+\subsection{Reconocimiento de puertos (Nmap)}
+
+\begin{lstlisting}[language=bash, caption={nmap -sV sobre 80, 5000 y 5001 (evidence/red/nmap\_ports\_extra.nmap)}]
+PORT     STATE SERVICE VERSION
+80/tcp   open  http    nginx 1.28.3 (Ubuntu)
+5000/tcp open  http    Werkzeug httpd 3.1.8 (Python 3.14.4)
+5001/tcp open  http    Werkzeug httpd 3.1.8 (Python 3.14.4)
+\end{lstlisting}
+
+Nmap detectó, sin explotar nada, que detrás de Nginx corren dos servidores de
+desarrollo Flask/Werkzeug directamente alcanzables, con la versión exacta de
+Python --- confirmación empírica del hallazgo de arquitectura L2 (bind en
+\texttt{0.0.0.0}).
+
+\subsection{Reconocimiento HTTP (curl)}
+
+\texttt{curl -i} contra la página de inicio devolvió el HTML completo del
+dashboard, el cual \textbf{documenta por sí mismo} todos los endpoints de
+ambas APIs, incluyendo \texttt{/debug/env} marcado como vulnerabilidad
+intencional. \texttt{curl -s} contra \texttt{/api/alerts/alerts} devolvió el
+cuerpo JSON completo de las 5 alertas sin autenticación
+(\texttt{evidence/red/curl\_alerts\_body.json}).
+
+\subsection{Inspección pasiva con OWASP ZAP}
+
+Se usó \textit{Manual Explore} contra \texttt{http://192.168.17.129/}
+navegando el dashboard real, sin ejecutar Active Scan. Alertas pasivas
+obtenidas (\texttt{reports/zap-passive/zap-report.html}):
+
+\begin{itemize}
+    \item Content Security Policy (CSP) Header Not Set.
+    \item Missing Anti-clickjacking Header (\texttt{X-Frame-Options}).
+    \item \texttt{X-Content-Type-Options} Header Missing.
+    \item Server Leaks Version Information via \texttt{Server} Header.
+\end{itemize}
+
+\subsection{Captura de tráfico}
+
+Blue Team inició \texttt{tcpdump} en el servidor durante 60 segundos mientras
+Red Team generaba tráfico desde Kali. El PCAP resultante
+(\texttt{evidence/blue/lab3-http.pcap}, 104 paquetes) muestra las solicitudes
+y respuestas HTTP completas en texto claro, confirmando H1/H2 del modelo de
+amenazas (Information Disclosure por falta de TLS).
+
+% ============================================================================
+% 11. FASE D --- DETECCIÓN BLUE TEAM
+% ============================================================================
+\section{Detección Blue Team (Fase D)}
+\label{sec:blueteam}
+
+\subsection{Regla de detección}
+
+\textbf{Regla:} una misma IP produce 5 o más respuestas HTTP 404 en una
+ventana de 5 minutos en \texttt{lab3\_access.log}. Implementada en
+\texttt{evidence/blue/detect\_404.py} (ventana deslizante por IP, sin
+dependencias externas).
+
+\begin{lstlisting}[caption={Validación contra el log real (evidence/blue/detection\_rule\_result.txt)}]
+ALERTA 2026-09-24T03:52:25+00:00 ip=192.168.17.130
+       404s_en_5min=5 rutas=['/api/alerts/no-existe']
+\end{lstlisting}
+
+Se validó con tres casos: positivo (6 solicitudes 404 reales generan la
+alerta en el quinto evento, no en el sexto), negativo (el mismo log sin esas
+líneas no alerta) y de umbral (4 líneas 404 no alertan). Limitaciones
+documentadas en \texttt{evidence/blue/detection-rule.md}: solo ve tráfico que
+pasa por Nginx (el reconocimiento contra 5000/5001 no dejó rastro aquí),
+no detecta un SYN scan puro, se evade bajando la frecuencia o rotando IP, y
+solo mira el código 404 (no detecta enumeración exitosa de rutas con 200).
+
+\subsection{Correlación con Red Team}
+
+Cruzando \texttt{access.log} con los comandos de la Fase C: las sondas de
+fingerprinting propias de \texttt{nmap -sV} (\texttt{GET
+/nmaplowercheck...}, \texttt{POST /sdk}) sí quedaron registradas, porque
+\texttt{-sV} completa el handshake TCP y envía peticiones HTTP reales; un
+hipotético SYN scan (\texttt{-sS}) no las habría generado. El reconocimiento
+contra 5000/5001 no aparece en \texttt{access.log} porque esos puertos no
+pasaban por el proxy.
+
+% ============================================================================
+% 12. LÍNEA DE TIEMPO PURPLE TEAM
+% ============================================================================
+\section{Línea de Tiempo Purple Team}
+\label{sec:purpleteam}
+
+La Tabla~\ref{tab:purple} correlaciona cada acción Red Team con su evidencia
+Blue Team, con horas reales en UTC (detalle completo en
+\texttt{evidence/purple-team-timeline.md}).
+
+\clearpage
+\begin{table*}[p]
+\centering
+\caption{Línea de tiempo Purple Team (horas UTC, 2026-09-24)}
+\label{tab:purple}
+\tiny
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|p{1.3cm}|p{3.8cm}|p{4.8cm}|p{4.8cm}|}
+\hline
+\textbf{Hora} & \textbf{Acción Red Team} & \textbf{Evidencia Blue Team} & \textbf{Conclusión} \\
+\hline
+02:58:31 & Nmap \texttt{-sV} puerto 80 & \texttt{access.log}: sondas NSE de fingerprinting & \texttt{-sV} completa el handshake y manda sondas HTTP reales, por eso aparece en el log \\
+\hline
+02:59--03:00 & Nmap \texttt{-sV} puertos 80/5000/5001 & Sondas NSE repetidas; fingerprint de Werkzeug solo en la salida de Nmap & 5000/5001 no pasan por Nginx: Blue Team no ve nada de ese reconocimiento en \texttt{access.log} \\
+\hline
+03:04:40 & \texttt{curl -i /} & \texttt{access.log}: \texttt{GET / 200} & Correlación exacta confirmada \\
+\hline
+03:05:06 & \texttt{curl -I .../alerts} & \texttt{access.log}: \texttt{HEAD /api/alerts/alerts 200} & \texttt{curl -I} genera HEAD, no GET \\
+\hline
+03:05:33 & \texttt{curl -s .../alerts} & \texttt{access.log}: \texttt{GET ... 200 1711} & Cuerpo JSON completo sin autenticación \\
+\hline
+03:26--03:34 & ZAP Manual Explore (pasivo) & \texttt{zap-report.html}: CSP/X-Frame-Options/X-Content-Type-Options ausentes & Confirma H4 (Information Disclosure) sin Active Scan \\
+\hline
+03:52:02--32 & \texttt{curl} durante la ventana de \texttt{tcpdump} & \texttt{lab3-http.pcap} (104 paquetes) + \texttt{access.log} & Tráfico HTTP en texto claro --- confirma H1/H2 \\
+\hline
+03:52:25 & 6$\times$ \texttt{curl} a ruta inexistente de API & \texttt{detection\_404.txt}: 6 respuestas 404 agrupadas en el mismo segundo & Regla de detección validada con datos reales \\
+\hline
+03:54:53 & \textit{(Blue Team)} aplica hardening y recarga Nginx & \texttt{journalctl}: evento de reload registrado & Corrección verificable en el log del propio sistema \\
+\hline
+03:55:03 & Retest parcial (solo Nginx): headers, ruta oculta & Headers presentes; \texttt{/.git/config} $\to$ 403 & Hardening de Nginx verificado \\
+\hline
+04:02:42 & \textit{(Builder)} redespliega con fix de Flask + UFW & \texttt{deploy.sh}: 3 servicios activos, UFW activo & Corrección de código y de red aplicadas juntas \\
+\hline
+04:03 & Retest final: Nmap 80/5000/5001, \texttt{curl} a \texttt{/debug/env} & 5000/5001 \texttt{filtered}; \texttt{/debug/env} $\to$ sin respuesta & Superficie reducida de 3 puertos a 1, sin romper el dashboard \\
+\hline
+\end{tabular}
+\end{table*}
+
+% ============================================================================
+% 13. FASE E --- CORRECCIÓN (HARDENING)
+% ============================================================================
+\section{Corrección --- Hardening (Fase E)}
+\label{sec:hardening}
+
+\subsection{Hardening de Nginx}
+
+Se agregó al bloque \texttt{server}: \texttt{server\_tokens off},
+\texttt{X-Content-Type-Options: nosniff}, \texttt{X-Frame-Options: DENY},
+\texttt{Referrer-Policy: no-referrer}, \texttt{autoindex off}, y una regla
+\texttt{deny all} para rutas ocultas (cualquier ruta que empiece por un
+punto, como \texttt{.git}).
+
+\subsection{Corrección del código Flask}
+
+Ambos microservicios pasaron de \texttt{app.run(host='0.0.0.0', debug=True)}
+a \texttt{app.run(host='127.0.0.1', debug=False)}, y se eliminó el endpoint
+\texttt{/debug/env}. Esto cierra directamente el hallazgo de arquitectura L2:
+los microservicios dejan de ser alcanzables sin pasar por el proxy.
+
+\subsection{Firewall UFW}
+
+\begin{lstlisting}[language=bash]
+sudo LAB_CIDR=192.168.17.0/24 ./deploy.sh
+\end{lstlisting}
+
+Resultado: \texttt{80/tcp ALLOW IN 192.168.17.0/24}, \texttt{OpenSSH ALLOW IN
+Anywhere}, política por defecto \texttt{deny incoming}.
+
+\subsection{Verificación de \texttt{source\_ip} (T05 / M-009)}
+
+Se corrigió \texttt{actions-api} para registrar la IP real del cliente
+(\texttt{X-Real-IP}, inyectada por Nginx) como \texttt{source\_ip} en cada
+acción, en vez de \texttt{remote\_addr} (que detrás del proxy siempre
+mostraría \texttt{127.0.0.1}). Verificado en la VM el 2026-10-16 con un
+\texttt{POST} real desde Kali:
+
+\begin{lstlisting}[caption={Respuesta de /api/actions/actions (source\_ip\_vm.md)}]
+{"action":"investigate","alert_id":"ALT-002",
+ "analyst":"carlos.garcia","id":"ACT-004",
+ "source_ip":"192.168.17.130",
+ "timestamp":"2026-10-16T01:15:40.358935Z"}
+\end{lstlisting}
+
+La misma IP y el mismo timestamp aparecen correlacionados en
+\texttt{access.log} de Nginx y en \texttt{actions.log} de Flask
+(\texttt{source\_ip\_vm.md}), confirmando que \texttt{X-Real-IP} se propaga
+correctamente. T05 pasa de ``mitigado parcialmente'' a \textbf{mitigado y
+verificado en la VM}; sigue sin resolver la falta de sesión autenticada que
+ligue la acción a una identidad real, pendiente para el Laboratorio 4.
+
+% ============================================================================
+% 14. FASE F --- VERIFICACIÓN (RETEST)
+% ============================================================================
+\section{Verificación --- Retest (Fase F)}
+\label{sec:retest}
+
+\begin{table}[H]
+\centering
+\caption{Comparación antes / después del hardening completo}
+\label{tab:retest-final}
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{2.2cm}|p{2.1cm}|p{2.1cm}|}
+\hline
+\textbf{Elemento} & \textbf{Antes} & \textbf{Después} \\
+\hline
+Puerto 80 & \texttt{nginx 1.28.3 (Ubuntu)} & \texttt{nginx} (sin versión) \\
+\hline
+Puerto 5000 & \texttt{open}, Werkzeug/Python & \texttt{filtered} \\
+\hline
+Puerto 5001 & \texttt{open}, Werkzeug/Python & \texttt{filtered} \\
+\hline
+\texttt{/debug/env} directo & \texttt{200}, expone entorno & Sin respuesta (\texttt{000}) \\
+\hline
+Dashboard \texttt{/} & \texttt{200} & \texttt{200} (sin regresión) \\
+\hline
+API vía proxy & \texttt{200} & \texttt{200} (sin regresión) \\
+\hline
+Headers de seguridad & Ausentes & Presentes (3) \\
+\hline
+\texttt{/.git/config} & Habría dado \texttt{200} & \texttt{403 Forbidden} \\
+\hline
+CSP & Ausente & Sigue ausente (pendiente) \\
+\hline
+\end{tabular}
+\end{table}
+
+La superficie de ataque expuesta a la red pasó de 3 puertos con huella de
+versión completa a 1 puerto sin versión, sin afectar la funcionalidad
+legítima. Detalle completo en \texttt{evidence/retest/comparacion-antes-despues.md}.
+
+\subsection{Estado final de las amenazas}
+
+Según \texttt{risk-register.md} y \texttt{threat-model/threat-model.xlsx}
+(hoja \textit{Threats}):
+
+\begin{itemize}
+    \item \textbf{Corregido:} T06 (\texttt{/debug/env} eliminado,
+    \texttt{server\_tokens off}), T09 (5000/5001 filtrados, loopback), T10
+    (\texttt{debug=False}).
+    \item \textbf{Mitigado y verificado:} T05 (\texttt{source\_ip} vía
+    \texttt{X-Real-IP}, verificado en la VM el 2026-10-16).
+    \item \textbf{Pendiente para Lab 4:} T01 (HTTP en texto claro, PCAP como
+    evidencia), T02, T03, T04 y T08 (sin identidad, autenticación ni
+    autorización).
+    \item \textbf{Pendiente para Lab 4/5:} T07 (servidor de desarrollo, sin
+    límite de tasa).
+    \item \textbf{Aceptado en el Lab 3:} ausencia de HTTPS y autenticación,
+    reservadas explícitamente al Lab 4.
+    \item \textbf{Pendiente:} Content-Security-Policy.
+\end{itemize}
+
+% ============================================================================
+% 15. PREGUNTAS DE ANÁLISIS
+% ============================================================================
+\section{Preguntas de Análisis}
+\label{sec:preguntas}
+
+Respuestas completas, con referencias a la evidencia exacta, en
+\texttt{evidence/preguntas-de-analisis.md}. Resumen:
+
+\begin{enumerate}
+    \item \textbf{¿Qué observó Red Team sin explotar nada?} Puertos y
+    versiones (Nmap), headers (\texttt{curl -I}), el cuerpo JSON completo de
+    las alertas, y en ZAP pasivo la ausencia de CSP/X-Frame-Options/X-Content-Type-Options.
+    \item \textbf{¿Qué no apareció en \texttt{access.log} y por qué?} El
+    reconocimiento de 5000/5001 (no pasa por Nginx) y, en teoría, un SYN scan
+    puro (no completa el handshake de aplicación).
+    \item \textbf{¿Qué control reduce exposición pero no resuelve HTTP?}
+    \texttt{server\_tokens off}, los headers, el bind a loopback y UFW
+    reducen el fingerprint, pero el tráfico por el puerto 80 sigue sin
+    cifrar.
+    \item \textbf{¿Qué le faltaría a Blue Team para distinguir curl legítimo
+    de actividad sospechosa?} Identidad autenticada, inventario de IPs
+    autorizadas, línea base de tráfico normal, y correlación de
+    \texttt{X-Real-IP} con los logs de cada microservicio.
+    \item \textbf{¿Qué amenaza STRIDE priorizar en Lab 4?} Spoofing
+    (T02/T03) junto con Elevation of Privilege (T08), acompañada de TLS
+    (T01/T04).
+    \item \textbf{¿Qué conclusión de la IA no pudo comprobarse
+    directamente?} Ver Sección~\ref{sec:ia}.
+\end{enumerate}
+
+% ============================================================================
+% 16. USO RESPONSABLE DE IA
+% ============================================================================
+\section{Uso Responsable de IA}
+\label{sec:ia}
+
+Se usó Claude Code como copiloto de apoyo para redactar y organizar
+documentación, preparar el script de la regla de detección, generar el DFD
+de la arquitectura fortalecida, y --- con autorización explícita del equipo
+--- ejecutar directamente contra la VM del laboratorio comandos de
+reconocimiento (Nmap, curl), despliegue, hardening y retest, siempre
+verificados contra la salida real del servidor o del repositorio. Cada
+afirmación técnica de este informe se contrastó con un comando, un log o un
+archivo real; no se compartieron contraseñas, tokens, llaves ni PCAP
+completos con la IA. Detalle en \texttt{evidence/uso-de-ia.md}.
+
+Ejemplo concreto de una hipótesis de la IA que no se pudo comprobar
+directamente: ante un error de conexión SSH (\texttt{Permission denied} en
+el \texttt{connect}), la IA propuso como causa los servicios de red de
+VMware atascados y sugirió reiniciarlos --- hipótesis plausible que nunca se
+validó, porque la causa real (una VPN activa interceptando las rutas) se
+descubrió por otro medio y se repitió, con el mismo diagnóstico correcto,
+en una sesión posterior.
+
+% ============================================================================
+% 17. REFLEXIÓN INDIVIDUAL
+% ============================================================================
+\section*{Reflexión Individual}
+\label{sec:reflexion}
+
+\subsection*{Brayan Loaiza Leal}
+% TODO (Brayan): máximo 250 palabras, en primera persona. Sugerencia de
+% puntos a cubrir -- personalizar antes de entregar:
+% - Montar la VM de Kali y resolver el problema de red (VPN interceptando
+%   las rutas de VMware) como parte del aprendizaje práctico de redes.
+% - Encontrar en vivo el bug de CORS entre el dashboard y la API, y cómo
+%   un error que "no se ve" en curl sí se ve en el navegador.
+% - Coordinar con Juan sobre trabajo hecho en paralelo sin perder nada de
+%   ninguno de los dos (reconciliar historiales de Git).
+% - Qué le pareció más revelador del modelo de amenazas STRIDE aplicado a
+%   código real en vez de un ejemplo genérico.
+
+\subsection*{Juan Sebastián Guayazán Clavijo}
+% TODO (Juan): máximo 250 palabras, en primera persona.
+
+% ============================================================================
 % 9. CONCLUSIONES
 % ============================================================================
 \section{Conclusiones}
@@ -724,6 +1058,24 @@ Candidates} de \texttt{threat-model/threat-model.xlsx}.
     insegura y controlada. Las correcciones de hardening reducen exposición
     pero no resuelven el riesgo de fondo de HTTP sin cifrado ni autenticación,
     que queda explícitamente abierto para el Laboratorio 4.
+
+    \item El ciclo completo Atacar $\rightarrow$ Detectar $\rightarrow$
+    Corregir $\rightarrow$ Verificar (Parte II) confirmó en la práctica tres
+    de las seis hipótesis STRIDE (Information Disclosure, Repudiation vía
+    \texttt{source\_ip}) y redujo la superficie de ataque expuesta a la red
+    de 3 puertos con huella de versión completa a 1 puerto sin versión, sin
+    romper el dashboard ni las APIs.
+
+    \item La regla de detección de 404s, validada con casos positivos,
+    negativos y de umbral contra el log real, demuestra tanto su utilidad
+    como sus límites: no ve tráfico que evita Nginx, no detecta un SYN scan
+    puro, y se evade bajando la frecuencia o rotando la IP de origen ---
+    limitaciones que deben guiar el diseño de detección del Laboratorio 4.
+
+    \item Spoofing (T02/T03) y Elevation of Privilege (T08), acompañados de
+    TLS (T01/T04), quedan como la prioridad técnica para la siguiente
+    entrega: hoy cualquier cliente anónimo puede suplantar a un analista o
+    escalar/cerrar una alerta crítica sin ninguna verificación de identidad.
 
 \end{itemize}
 
