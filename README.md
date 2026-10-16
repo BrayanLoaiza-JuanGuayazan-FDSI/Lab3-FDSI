@@ -210,7 +210,7 @@ gap → riesgo → mejora están en `threat-model/threat-model.xlsx`. Diagramas 
 - **Parte I:** construcción, publicación, estructura del repositorio, evidencia de ejecución local y modelo de amenazas inicial (informe en `report/`).
 - **Parte 2:** superficie de ataque reducida, **desplegada y verificada en la VM**: servicios solo en `127.0.0.1`, UFW limitado a `LAB_CIDR`, sin `/debug/env` ni `debug=True`, hardening de Nginx. Evidencia en `evidence/retest/`.
 - **Ronda Red/Blue Team:** ejecutada. Evidencia en `evidence/red/`, `evidence/blue/`, `reports/zap-passive/` y `evidence/purple-team-timeline.md`.
-- **Pendiente (Lab 4/5):** HTTPS/TLS (plan en `threat-model/threat-model.xlsx`, hoja `Improvements`, fila G05), autenticación y RBAC, Content-Security-Policy, rate limiting y servidor WSGI de producción. La prueba en la VM de `source_ip` en las acciones también está pendiente.
+- **Pendiente (Lab 4/5):** HTTPS/TLS (plan en `threat-model/threat-model.xlsx`, hoja `Improvements`, fila G05), autenticación y RBAC, Content-Security-Policy, rate limiting y servidor WSGI de producción. `source_ip` en las acciones ya quedó verificado en la VM (`evidence/retest/source_ip_vm.md`).
 
 ---
 
