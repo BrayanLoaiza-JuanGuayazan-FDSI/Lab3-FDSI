@@ -1,0 +1,49 @@
+name: Seguridad estática - SAST y secretos
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sast:
+    name: Semgrep (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar Semgrep
+        run: python -m pip install --upgrade semgrep
+      - name: Análisis con reglas comunitarias
+        run: semgrep scan --config p/owasp-top-ten --config p/secrets --json --output semgrep.json || true
+      - name: Publicar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-semgrep
+          path: semgrep.json
+          if-no-files-found: warn
+  secretos:
+    name: Gitleaks (secret scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Instalar Gitleaks CLI
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+      - name: Detección de secretos
+        run: ./gitleaks detect --source . --log-opts="HEAD~1..HEAD" --report-format json --report-path gitleaks.json --no-banner || true
+      - name: Publicar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-gitleaks
+          path: gitleaks.json
+          if-no-files-found: warn

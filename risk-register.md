@@ -53,7 +53,7 @@ La matriz de hipótesis STRIDE (con elemento afectado, evidencia y mitigación p
 Estado a la fecha de la retest (detalle por amenaza en la columna *Estado* de la hoja *Threats*):
 
 - **Corregido:** T06 (`/debug/env` eliminado, `server_tokens off`), T09 (puertos 5000/5001 filtrados y servicios en loopback), T10 (`debug=False`). Evidencia: `evidence/retest/`.
-- **Mitigado parcialmente:** T05 (`source_ip` y `X-Real-IP` en logs; falta probarlo en la VM y la identidad autenticada).
+- **Mitigado y verificado:** T05 (`source_ip` y `X-Real-IP` coinciden en la respuesta, `access.log` y `actions.log`; `evidence/retest/source_ip_vm.md`). La identidad autenticada sigue pendiente para Lab 4.
 - **Pendiente para Lab 4:** T01 (HTTP en texto claro, demostrado en `evidence/blue/lab3-http.pcap`), T02, T03, T04 y T08 (sin identidad, autenticación ni autorización).
 - **Pendiente para Lab 4/5:** T07 (servidor de desarrollo y sin límite de tasa).
 - **Aceptado en el Lab 3:** que el servicio siga sin HTTPS ni autenticación, porque la guía los reserva al Lab 4. Por eso T01–T04 y T08 quedan abiertas y no cerradas.
