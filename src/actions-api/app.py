@@ -9,6 +9,7 @@ import datetime
 import hmac
 import logging
 import os
+from werkzeug.serving import WSGIRequestHandler
 
 logging.basicConfig(
     filename='actions.log',
@@ -120,5 +121,10 @@ def create_action():
     logging.info(f"ACTION {new_action['id']}: {action_type} on {new_action['alert_id']} by {new_action['analyst']} from {new_action['source_ip']}")
     return jsonify(new_action), 201
 
+class NoBannerRequestHandler(WSGIRequestHandler):
+    # El servidor de Werkzeug anuncia su version y la de Python en el header Server.
+    def version_string(self):
+        return 'api'
+
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    app.run(host='127.0.0.1', port=5001, debug=False, request_handler=NoBannerRequestHandler)

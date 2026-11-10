@@ -10,6 +10,7 @@ import datetime
 import hmac
 import logging
 import os
+from werkzeug.serving import WSGIRequestHandler
 
 logging.basicConfig(
     filename='alerts.log',
@@ -97,7 +98,6 @@ def require_api_key():
 @app.after_request
 def log_response(response):
     logging.info(f"RESPONSE {response.status_code} for {request.method} {request.path}")
-    response.headers['Server'] = 'FalconSim/1.0'
     return response
 
 @app.route('/', methods=['GET'])
@@ -156,5 +156,10 @@ def create_alert():
     logging.info(f"NEW ALERT created: {new_alert['id']} severity:{new_alert['severity']}")
     return jsonify(new_alert), 201
 
+class NoBannerRequestHandler(WSGIRequestHandler):
+    # El servidor de Werkzeug anuncia su version y la de Python en el header Server.
+    def version_string(self):
+        return 'api'
+
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=5000, debug=False, request_handler=NoBannerRequestHandler)
