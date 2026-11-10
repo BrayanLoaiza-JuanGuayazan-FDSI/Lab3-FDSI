@@ -1,0 +1,60 @@
+# Validacion manual ANTES - commit 6440081 - 2026-11-10 21:33:51 UTC - staging local Docker
+
+### H1 CWE-306: GET /alerts SIN credencial
+HTTP 200
+
+
+### H1 CWE-306: GET /actions SIN credencial
+HTTP 200
+
+
+### H1 CWE-306: POST /actions SIN credencial
+HTTP 201
+
+
+### H1 CWE-306: POST /alerts con credencial INVALIDA
+HTTP 201
+
+
+### H1 control: GET /health sigue publico
+HTTP 200
+
+
+### H1 control: GET /alerts con credencial valida
+HTTP 200
+
+
+### H2 CWE-79: POST de carga inocua (se almacena)
+{"created_at":"2026-11-10T21:33:52.367326Z","description":"","host":"POC-HOST","id":"ALT-007","ioc":"","severity":"LOW","status":"open","type":"<img src=x onerror=console.log(1)>","user":"poc.tester"}
+
+HTTP 201
+
+
+### H2 CWE-79: el dashboard usa innerHTML con datos?
+2
+
+
+### M CWE-20: severity fuera del enum
+HTTP 201
+
+
+### M CWE-20: campo de longitud excesiva
+HTTP 201
+
+
+### M CWE-200: header Server alerts-api (loopback)
+Server: Werkzeug/3.1.9 Python/3.12.16
+Server: FalconSim/1.0
+
+
+### M CWE-200: header Server actions-api (loopback)
+Server: Werkzeug/3.1.9 Python/3.12.16
+
+
+### M CSP: header Content-Security-Policy en /
+AUSENTE
+
+
+### M debug: consola Werkzeug /console
+HTTP 404
+

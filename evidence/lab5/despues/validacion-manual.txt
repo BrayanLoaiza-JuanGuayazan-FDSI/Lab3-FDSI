@@ -1,0 +1,59 @@
+# Validacion manual DESPUES - rama security/lab-fsi - 2026-11-10 21:45:09 UTC - staging local Docker
+
+### H1 CWE-306: GET /alerts SIN credencial
+HTTP 401
+
+
+### H1 CWE-306: GET /actions SIN credencial
+HTTP 401
+
+
+### H1 CWE-306: POST /actions SIN credencial
+HTTP 401
+
+
+### H1 CWE-306: POST /alerts con credencial INVALIDA
+HTTP 401
+
+
+### H1 control: GET /health sigue publico
+HTTP 200
+
+
+### H1 control: GET /alerts con credencial valida
+HTTP 200
+
+
+### H2 CWE-79: POST de carga inocua (se almacena)
+{"created_at":"2026-11-10T21:45:10.098598Z","description":"","host":"POC-HOST","id":"ALT-006","ioc":"","severity":"LOW","status":"open","type":"<img src=x onerror=console.log(1)>","user":"poc.tester"}
+
+HTTP 201
+
+
+### H2 CWE-79: el dashboard usa innerHTML con datos?
+0
+
+
+### M CWE-20: severity fuera del enum
+HTTP 400
+
+
+### M CWE-20: campo de longitud excesiva
+HTTP 400
+
+
+### M CWE-200: header Server alerts-api (loopback)
+Server: api
+
+
+### M CWE-200: header Server actions-api (loopback)
+Server: api
+
+
+### M CSP: header Content-Security-Policy en /
+Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+
+### M debug: consola Werkzeug /console
+HTTP 401
+
