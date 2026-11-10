@@ -58,6 +58,7 @@ La severidad es la asignada por el equipo según impacto real. Semgrep reporta `
 | F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Pendiente (Parte 1, Juan)** | n/a |
 | F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | Riesgo aceptado | n/a |
 | **F-17** | Los mismos `Host $host` en `evidence/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
+| **F-18** | Credencial en script de validación | Gitleaks | CWE-798 | n/a | **Falsa alarma** | Documentado | n/a |
 
 Meta de remediación: **2 High** (F-03, F-01) cumplida. De las **4 Medium**, esta parte aporta 3 (F-09, F-11, F-02) y la cuarta es F-15, de la Parte 1.
 
@@ -88,6 +89,16 @@ Meta de remediación: **2 High** (F-03, F-01) cumplida. De las **4 Medium**, est
 - **Título:** `request-host-used` reportado en archivos de evidencia.
 - **Análisis:** 4 de los 6 resultados de esta regla están en `evidence/blue/nginx-config-before.conf` y `evidence/server-nginx.txt`, copias históricas del Lab 3 que no se despliegan.
 - **Decisión:** no se editan porque son evidencia. Se excluyen del escaneo con `.semgrepignore`. Los 2 resultados de la configuración viva se mantienen visibles como F-16.
+
+## Hallazgo F-18 (falsa alarma)
+
+- **Título:** Gitleaks `curl-auth-header` en `evidence/lab5/validacion-manual.sh:7`.
+- **Análisis:** el valor detectado es `clave-incorrecta`, la credencial inválida a propósito con la que el script comprueba que el API responde `401`. No da acceso a nada.
+- **Decisión:** se mantiene y se documenta. El job de Gitleaks termina en verde aunque haya resultados (`|| true`), por lo que hay que revisar el artefacto.
+
+## Resultado en CI
+
+Corrida [42908756960](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/actions/runs/42908756960) sobre el Pull Request #3: pruebas de regresión 44 de 44, Semgrep 1.185.0 con los mismos 2 resultados de F-16, y Gitleaks con 1 resultado (F-18).
 
 ## Decisión SCA (Flask y Werkzeug)
 
