@@ -1,13 +1,15 @@
 """
 CrowdStrike Falcon Alert Simulator - Alerts API
 Microservicio que recibe y expone alertas ficticias de seguridad.
-ADVERTENCIA: Sin autenticacion, sin TLS - vulnerabilidades intencionales para Lab 3 FDSI.
+Requiere el header X-API-Key en todas las rutas excepto /health. Sin TLS (riesgo residual documentado).
 """
 
 from flask import Flask, jsonify, request
 import json
 import datetime
+import hmac
 import logging
+import os
 
 logging.basicConfig(
     filename='alerts.log',
@@ -80,6 +82,17 @@ ACTIONS_LOG = []
 @app.before_request
 def log_request():
     logging.info(f"REQUEST {request.method} {request.path} from {request.headers.get('X-Real-IP', request.remote_addr)} UA:{request.headers.get('User-Agent','')}")
+
+def api_key_is_valid():
+    expected = os.environ.get('LAB_API_KEY', '')
+    provided = request.headers.get('X-API-Key', '')
+    return bool(expected) and hmac.compare_digest(provided.encode(), expected.encode())
+
+@app.before_request
+def require_api_key():
+    # /health queda publico para el monitoreo; sin LAB_API_KEY configurada se rechaza todo.
+    if request.endpoint != 'health' and not api_key_is_valid():
+        return jsonify({"error": "Unauthorized"}), 401
 
 @app.after_request
 def log_response(response):
