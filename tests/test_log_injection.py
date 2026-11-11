@@ -157,7 +157,7 @@ def test_actions_log_request_sanitizes_encoded_newline_in_path(
         actions_module, caplog):
     with actions_module.app.test_client() as client:
         with caplog.at_level(logging.INFO):
-            response = client.get("/%0a")
+            response = client.get("/%0a", headers=AUTH)
 
     assert response.status_code == 404
     request_messages = [
