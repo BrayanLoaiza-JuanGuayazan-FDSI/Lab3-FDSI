@@ -113,6 +113,12 @@ def create_action():
     if action_type not in allowed_actions:
         return jsonify({"error": f"Invalid action. Allowed: {allowed_actions}"}), 400
 
+    # Validar antes de construir o guardar la acción para evitar estados parciales.
+    for field, default in (("alert_id", ""), ("analyst", "anonymous")):
+        value = data.get(field, default)
+        if not isinstance(value, str):
+            return jsonify({"error": f"Invalid field: {field}"}), 400
+
     new_action = {
         "id": f"ACT-{len(ACTIONS)+1:03d}",
         "alert_id": data.get("alert_id", ""),
