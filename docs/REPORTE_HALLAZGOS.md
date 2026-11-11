@@ -16,7 +16,7 @@ Los tres riesgos principales eran:
 
 Los tres quedaron corregidos en `security/lab-fsi`, con 44 pruebas de regresión: 31 fallan sobre la línea base y las 44 pasan después de la corrección.
 
-**Pendiente:** el Log Injection (CWE-117) le corresponde a la Parte 1 de Juan y no está en esta rama (ver F-15).
+El Log Injection (CWE-117) se corrigió en la Parte 1 (ver F-15).
 
 ### Comparación antes y después
 
