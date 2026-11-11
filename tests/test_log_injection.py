@@ -118,3 +118,52 @@ def test_actions_create_action_alert_id_newline_sanitized(actions_module, caplog
     assert len(action_msgs) == 1
     assert '\n' not in action_msgs[0]
     assert '\\n' in action_msgs[0]
+
+
+
+# ---------------------------------------------------------------------------
+# Validación de tipos: rechazar valores no textuales antes de guardar la acción
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("field,value", [
+    ("analyst", 123),
+    ("analyst", None),
+    ("alert_id", 123),
+    ("alert_id", None),
+])
+def test_actions_reject_non_string_log_fields_without_saving(
+        actions_module, field, value):
+    before = len(actions_module.ACTIONS)
+    payload = {
+        "alert_id": "ALT-001",
+        "analyst": "analyst",
+        "action": "investigate",
+        "notes": "test",
+    }
+    payload[field] = value
+
+    with actions_module.app.test_client() as client:
+        response = client.post("/actions", json=payload, headers=AUTH)
+
+    assert response.status_code == 400
+    assert len(actions_module.ACTIONS) == before
+
+
+# ---------------------------------------------------------------------------
+# Cobertura de log_request: la ruta con %0a debe quedar en una sola línea
+# ---------------------------------------------------------------------------
+
+def test_actions_log_request_sanitizes_encoded_newline_in_path(
+        actions_module, caplog):
+    with actions_module.app.test_client() as client:
+        with caplog.at_level(logging.INFO):
+            response = client.get("/%0a")
+
+    assert response.status_code == 404
+    request_messages = [
+        message for message in caplog.messages
+        if message.startswith("REQUEST GET ")
+    ]
+    assert len(request_messages) == 1
+    assert "\\n" in request_messages[0]
+    assert "\n" not in request_messages[0]
