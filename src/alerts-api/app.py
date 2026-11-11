@@ -84,9 +84,18 @@ ALLOWED_SEVERITIES = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'}
 TEXT_FIELDS = ('type', 'host', 'user', 'description', 'ioc')
 MAX_TEXT_LENGTH = 256
 
+
+def sanitize_log(value: str) -> str:
+    """Neutraliza saltos de línea para prevenir Log Injection (CWE-117)."""
+    return value.replace('\n', '\\n').replace('\r', '\\r')
+
+
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {request.headers.get('X-Real-IP', request.remote_addr)} UA:{request.headers.get('User-Agent','')}")
+    path = sanitize_log(request.path)
+    ua   = sanitize_log(request.headers.get('User-Agent', ''))
+    ip   = request.headers.get('X-Real-IP', request.remote_addr)
+    logging.info(f"REQUEST {request.method} {path} from {ip} UA:{ua}")
 
 def api_key_is_valid():
     expected = os.environ.get('LAB_API_KEY', '')
@@ -101,7 +110,8 @@ def require_api_key():
 
 @app.after_request
 def log_response(response):
-    logging.info(f"RESPONSE {response.status_code} for {request.method} {request.path}")
+    path = sanitize_log(request.path)
+    logging.info(f"RESPONSE {response.status_code} for {request.method} {path}")
     return response
 
 @app.route('/', methods=['GET'])
