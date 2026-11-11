@@ -79,24 +79,25 @@ El reporte clasificó las coincidencias como WARNING y las relacionó con CWE-29
 
 Para evitar reenviar a los microservicios el valor Host recibido del cliente, se modificaron ambas directivas a `proxy_set_header Host $proxy_host;`. De esta forma Nginx utiliza el host del upstream definido en cada `proxy_pass` (127.0.0.1:5000 y 127.0.0.1:5001), en lugar de conservar el encabezado Host de la solicitud externa.
 
-El cambio se encuentra en esta misma rama de documentación y se propone para revisión en el PR #9. Antes de considerar cerrado el hallazgo se debe comprobar que los microservicios no dependan del Host externo, ejecutar las pruebas de integración y repetir Semgrep. La eliminación de la advertencia en un nuevo reporte y la ausencia de regresiones son condiciones para confirmar la remediación.
+El cambio se encuentra en la rama `docs/lab5-report` y se propone para revisión en el PR #9. En la ejecución #24 del workflow, sobre el commit `cd1afdc1ccbaec7ae5419797b2f0d7b4777046d0`, Semgrep volvió a examinar `nginx/lab3-fdsi.conf` y el reporte resultó sin coincidencias (`results: []`) ni errores (`errors: []`). Las pruebas de regresión también finalizaron correctamente. Por tanto, el hallazgo quedó técnicamente corregido en el análisis estático de esta rama. La integración final sigue sujeta a la revisión y fusión del PR #9.
 
 ### 4.3 Gitleaks
 
-Gitleaks finalizó correctamente y produjo un reporte JSON vacío (`[]`), por lo que no detectó secretos en el intervalo de commits configurado por el workflow (`HEAD~1..HEAD`). Este resultado no equivale a un análisis de todo el historial del repositorio.
+Gitleaks finalizó correctamente en la misma ejecución #24 y produjo un reporte JSON vacío (`[]`), por lo que no detectó secretos en el intervalo de commits configurado por el workflow (`HEAD~1..HEAD`). Este resultado no equivale a un análisis de todo el historial del repositorio.
 
 ## 5. Resumen de estado
 
 | Elemento | Estado |
 |---|---|
 | CodeQL Default setup | Habilitado |
-| Semgrep #21 | 2 advertencias `request-host-used` en Nginx; cambio propuesto en PR #9, reescaneo pendiente |
-| Gitleaks #21 | 0 secretos detectados en `HEAD~1..HEAD` |
+| Semgrep #21 (baseline) | 2 advertencias `request-host-used` en Nginx |
+| Semgrep #24 (reescaneo) | 0 hallazgos; `results: []`, sin errores |
+| Gitleaks #24 | 0 secretos detectados en `HEAD~1..HEAD` |
 | Secret Scanning | Habilitado |
 | Dependabot alerts | Habilitado |
 | Acceso a alertas | Configurado para administradores y equipos de seguridad |
 | Corrección F-15 | Integrada en `main` mediante PR #8 |
-| Workflow SAST/Gitleaks #21 | Finalizado correctamente (success), 33 s |
+| Workflow SAST/Gitleaks #24 | Los tres jobs finalizaron correctamente (success) |
 | PR #8 | Fusionado en `main` |
 
 ## 6. Inventario de evidencias visuales
@@ -111,7 +112,7 @@ Las capturas recibidas y utilizadas para elaborar el informe PDF adjunto son:
 
 ## 7. Conclusión
 
-Las capturas confirman la habilitación de CodeQL Default setup, Secret Scanning y Dependabot alerts. La remediación F-15 fue integrada en `main`. La ejecución #21 confirmó el funcionamiento del workflow de Semgrep, pruebas y Gitleaks. Semgrep identificó dos advertencias asociadas al encabezado Host en Nginx; se preparó una corrección preventiva con `$proxy_host`, cuya validación final requiere pruebas de integración y una nueva ejecución de Semgrep.
+Las capturas confirman la habilitación de CodeQL Default setup, Secret Scanning y Dependabot alerts. La remediación F-15 fue integrada en `main`. La ejecución #21 confirmó el funcionamiento del workflow de Semgrep, pruebas y Gitleaks. Semgrep identificó inicialmente dos advertencias asociadas al encabezado Host en Nginx. Se sustituyó `$host` por `$proxy_host` en ambas directivas. El reescaneo #24 no reportó hallazgos y las pruebas de regresión finalizaron correctamente; queda pendiente la revisión y fusión del PR #9.
 
 ---
 
