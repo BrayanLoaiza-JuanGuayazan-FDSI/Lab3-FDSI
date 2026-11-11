@@ -1,12 +1,15 @@
 """
 CrowdStrike Falcon Alert Simulator - Actions API
 Microservicio que registra las acciones realizadas sobre alertas.
-ADVERTENCIA: Sin autenticacion, sin TLS - vulnerabilidades intencionales para Lab 3 FDSI.
+Requiere el header X-API-Key en todas las rutas excepto /health. Sin TLS (riesgo residual documentado).
 """
 
 from flask import Flask, jsonify, request
 import datetime
+import hmac
 import logging
+import os
+from werkzeug.serving import WSGIRequestHandler
 
 logging.basicConfig(
     filename='actions.log',
@@ -51,6 +54,17 @@ def client_ip():
 @app.before_request
 def log_request():
     logging.info(f"REQUEST {request.method} {request.path} from {client_ip()}")
+
+def api_key_is_valid():
+    expected = os.environ.get('LAB_API_KEY', '')
+    provided = request.headers.get('X-API-Key', '')
+    return bool(expected) and hmac.compare_digest(provided.encode(), expected.encode())
+
+@app.before_request
+def require_api_key():
+    # /health queda publico para el monitoreo; sin LAB_API_KEY configurada se rechaza todo.
+    if request.endpoint != 'health' and not api_key_is_valid():
+        return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/', methods=['GET'])
 def index():
@@ -107,5 +121,10 @@ def create_action():
     logging.info(f"ACTION {new_action['id']}: {action_type} on {new_action['alert_id']} by {new_action['analyst']} from {new_action['source_ip']}")
     return jsonify(new_action), 201
 
+class NoBannerRequestHandler(WSGIRequestHandler):
+    # El servidor de Werkzeug anuncia su version y la de Python en el header Server.
+    def version_string(self):
+        return 'api'
+
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    app.run(host='127.0.0.1', port=5001, debug=False, request_handler=NoBannerRequestHandler)

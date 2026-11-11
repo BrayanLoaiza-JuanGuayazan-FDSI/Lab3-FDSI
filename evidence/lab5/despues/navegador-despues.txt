@@ -1,0 +1,6 @@
+# Navegador real (Chromium headless) - rama security/lab-fsi
+status: 6 alertas · 4:45:12 PM
+filas: 6
+img inyectadas en tabla: 0
+celdas con payload literal: 1
+consola: []

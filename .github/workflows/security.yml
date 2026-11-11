@@ -1,0 +1,61 @@
+name: Seguridad estática - SAST y secretos
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sast:
+    name: Semgrep (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Instalar Semgrep
+        run: python -m pip install --upgrade semgrep
+      - name: Análisis con reglas comunitarias
+        run: semgrep scan --config p/owasp-top-ten --config p/secrets --json --output semgrep.json || true
+      - name: Publicar evidencia
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: resultado-semgrep
+          path: semgrep.json
+          if-no-files-found: warn
+  regresion:
+    name: Pruebas de regresion de seguridad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias
+        run: python -m pip install -r src/alerts-api/requirements.txt -r tests/requirements.txt
+      - name: Ejecutar pruebas
+        run: python -m pytest tests -v
+  secretos:
+    name: Gitleaks (secret scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Instalar Gitleaks CLI
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+      - name: Detección de secretos
+        run: ./gitleaks detect --source . --log-opts="HEAD~1..HEAD" --report-format json --report-path gitleaks.json --no-banner || true
+      - name: Publicar evidencia
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: resultado-gitleaks
+          path: gitleaks.json
+          if-no-files-found: warn

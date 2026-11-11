@@ -1,0 +1,6 @@
+# Navegador real (Chromium headless) - commit 6440081
+status: 9 alertas · 4:44:55 PM
+filas: 9
+img inyectadas en tabla: 1
+celdas con payload literal: 0
+consola: ['log: 1']

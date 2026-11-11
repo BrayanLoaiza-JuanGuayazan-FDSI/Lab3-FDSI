@@ -16,7 +16,7 @@ apt-get install -y nginx python3 python3-pip python3-venv -qq
 # 2. Copiar frontend a /var/www/lab3
 echo "[2/7] Desplegando frontend..."
 mkdir -p /var/www/lab3
-cp frontend/index.html /var/www/lab3/
+cp frontend/index.html frontend/app.js frontend/styles.css /var/www/lab3/
 chmod -R 755 /var/www/lab3
 
 # 3. Configurar Nginx
@@ -30,10 +30,10 @@ systemctl enable nginx
 
 # 4. Instalar dependencias Python para microservicios
 echo "[4/7] Instalando dependencias Python..."
-cd services/alerts-api
+cd src/alerts-api
 pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
-cd services/actions-api
+cd src/actions-api
 pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
 
@@ -45,6 +45,12 @@ WORKDIR=$(pwd)
 # asi que los servicios corren como el usuario dueño del repo.
 SERVICE_USER=${SUDO_USER:-$(whoami)}
 
+# La clave de las APIs se genera una vez y queda solo en este archivo (0600, root).
+ENV_FILE=/etc/lab3-fdsi.env
+if [ ! -f "$ENV_FILE" ]; then
+    (umask 077; echo "LAB_API_KEY=$(openssl rand -hex 32)" > "$ENV_FILE")
+fi
+
 cat > /etc/systemd/system/alerts-api.service << EOF
 [Unit]
 Description=FDSI Lab3 Alerts API
@@ -52,10 +58,11 @@ After=network.target
 
 [Service]
 User=$SERVICE_USER
-WorkingDirectory=$WORKDIR/services/alerts-api
+WorkingDirectory=$WORKDIR/src/alerts-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
 Environment=FLASK_ENV=production
+EnvironmentFile=$ENV_FILE
 
 [Install]
 WantedBy=multi-user.target
@@ -68,10 +75,11 @@ After=network.target
 
 [Service]
 User=$SERVICE_USER
-WorkingDirectory=$WORKDIR/services/actions-api
+WorkingDirectory=$WORKDIR/src/actions-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
 Environment=FLASK_ENV=production
+EnvironmentFile=$ENV_FILE
 
 [Install]
 WantedBy=multi-user.target
