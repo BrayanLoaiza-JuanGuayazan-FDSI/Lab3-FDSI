@@ -16,7 +16,7 @@ Los tres riesgos principales eran:
 
 Los tres quedaron corregidos en `security/lab-fsi`, con 44 pruebas de regresión: 31 fallan sobre la línea base y las 44 pasan después de la corrección.
 
-**Pendiente:** el Log Injection (CWE-117) le corresponde a la Parte 1 de Juan y no está en esta rama (ver F-15).
+El Log Injection (CWE-117) se corrigió en la Parte 1 (ver F-15).
 
 ### Comparación antes y después
 
@@ -55,12 +55,12 @@ La severidad es la asignada por el equipo según impacto real. Semgrep reporta `
 | F-13 | Dependabot sin periodo de espera | Semgrep (severidad MEDIUM) | CWE-1357 | Baja | Verdadero | Corregido | `13226ba` |
 | F-06 / SCA | Flask 3.0.3 con aviso y Werkzeug sin fijar | pip-audit | CVE-2026-27205 | Baja | Verdadero, no explotable aquí | Corregido | `f971d02` |
 | F-14 | Modo debug de Flask | Lista de la tarea | CWE-489 | n/a | Ya estaba corregido | Prueba de regresión | `0efcada` |
-| F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Pendiente (Parte 1, Juan)** | n/a |
+| F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Corregido** | `326e488` |
 | F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | Riesgo aceptado | n/a |
 | **F-17** | Los mismos `Host $host` en `evidence/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
 | **F-18** | Credencial en script de validación | Gitleaks | CWE-798 | n/a | **Falsa alarma** | Documentado | n/a |
 
-Meta de remediación: **2 High** (F-03, F-01) cumplida. De las **4 Medium**, esta parte aporta 3 (F-09, F-11, F-02) y la cuarta es F-15, de la Parte 1.
+Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: F-09, F-11, F-02 (Parte 2) y F-15 (Parte 1 — Log Injection). ✅ Meta alcanzada.
 
 ## Hallazgo F-03
 
@@ -113,7 +113,6 @@ Corrida [42908756960](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDS
 - **Staging:** el DAST y la validación corrieron en Docker local, no en la VM del laboratorio, que no estuvo accesible. `deploy.sh` solo pasó verificación de sintaxis (`bash -n`).
 - **ZAP pasivo** solo vio el frontend. Tras la corrección las APIs responden `401` al escáner, por lo que no analiza sus respuestas autenticadas.
 - **Servidor de desarrollo:** las APIs siguen usando el servidor de Werkzeug, detrás de Nginx y solo en loopback.
-- **Log Injection (F-15):** sigue presente hasta que se integre la Parte 1.
 
 ## Reflexión final
 

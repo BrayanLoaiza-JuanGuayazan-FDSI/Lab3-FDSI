@@ -47,13 +47,18 @@ ACTIONS = [
 ]
 
 def client_ip():
-    # Nginx sobrescribe X-Real-IP con la IP real del cliente; el servicio solo
-    # escucha en loopback, por lo que este header no puede venir del cliente.
     return request.headers.get('X-Real-IP', request.remote_addr)
+
+
+def sanitize_log(value: str) -> str:
+    """Neutraliza saltos de línea para prevenir Log Injection (CWE-117)."""
+    return value.replace('\n', '\\n').replace('\r', '\\r')
+
 
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {client_ip()}")
+    path = sanitize_log(request.path)
+    logging.info(f"REQUEST {request.method} {path} from {client_ip()}")
 
 def api_key_is_valid():
     expected = os.environ.get('LAB_API_KEY', '')
@@ -108,6 +113,12 @@ def create_action():
     if action_type not in allowed_actions:
         return jsonify({"error": f"Invalid action. Allowed: {allowed_actions}"}), 400
 
+    # Validar antes de construir o guardar la acción para evitar estados parciales.
+    for field, default in (("alert_id", ""), ("analyst", "anonymous")):
+        value = data.get(field, default)
+        if not isinstance(value, str):
+            return jsonify({"error": f"Invalid field: {field}"}), 400
+
     new_action = {
         "id": f"ACT-{len(ACTIONS)+1:03d}",
         "alert_id": data.get("alert_id", ""),
@@ -118,7 +129,9 @@ def create_action():
         "source_ip": client_ip()
     }
     ACTIONS.append(new_action)
-    logging.info(f"ACTION {new_action['id']}: {action_type} on {new_action['alert_id']} by {new_action['analyst']} from {new_action['source_ip']}")
+    alert_id_safe = sanitize_log(new_action['alert_id'])
+    analyst_safe  = sanitize_log(new_action['analyst'])
+    logging.info(f"ACTION {new_action['id']}: {action_type} on {alert_id_safe} by {analyst_safe} from {new_action['source_ip']}")
     return jsonify(new_action), 201
 
 class NoBannerRequestHandler(WSGIRequestHandler):
