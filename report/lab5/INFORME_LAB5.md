@@ -89,7 +89,9 @@ Gitleaks finalizó correctamente y produjo un reporte JSON vacío (`[]`), por lo
 
 | Elemento | Estado |
 |---|---|
-| CodeQL Default setup | Habilitado |\n| Semgrep #21 | 2 advertencias `request-host-used` en Nginx; corrección preventiva propuesta, reescaneo pendiente |\n| Gitleaks #21 | 0 secretos detectados en `HEAD~1..HEAD` |
+| CodeQL Default setup | Habilitado |
+| Semgrep #21 | 2 advertencias `request-host-used` en Nginx; cambio propuesto en PR #9, reescaneo pendiente |
+| Gitleaks #21 | 0 secretos detectados en `HEAD~1..HEAD` |
 | Secret Scanning | Habilitado |
 | Dependabot alerts | Habilitado |
 | Acceso a alertas | Configurado para administradores y equipos de seguridad |
