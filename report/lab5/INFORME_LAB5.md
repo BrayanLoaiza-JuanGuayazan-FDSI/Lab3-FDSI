@@ -62,7 +62,7 @@ Se incorporó validación de tipo para ambos campos antes de modificar la colecc
 
 El informe de hallazgos se actualizó para que F-15 haga referencia al SHA de remediación y no permanezca en la sección de limitaciones. Se documentó el alcance y las herramientas en `docs/SECURITY.md`. El PR #4, duplicado y con conflictos, se cerró; el fix continúa en el PR #8.
 
-**Estado de CI:** la ejecución correspondiente al commit `4729d0202f9e32d38834e1bf309cfbfa44302df9` se encontraba encolada al momento de preparar este informe. La batería de pruebas no se declara aprobada hasta comprobar el resultado final de GitHub Actions.
+**Estado de CI:** la ejecución correspondiente al commit `4729d0202f9e32d38834e1bf309cfbfa44302df9` finalizó con resultado **success** en GitHub Actions. El resultado confirma que el workflow terminó correctamente para ese commit.
 
 ## 4. Resumen de estado
 
@@ -73,7 +73,7 @@ El informe de hallazgos se actualizó para que F-15 haga referencia al SHA de re
 | Dependabot alerts | Habilitado |
 | Acceso a alertas | Configurado para administradores y equipos de seguridad |
 | Corrección F-15 | Cambios y pruebas añadidos al PR #8 |
-| CI del último commit | Pendiente de resultado |
+| CI del commit `4729d02` | Finalizado correctamente (success) |
 | Revisión y fusión del PR #8 | Pendientes |
 
 ## 5. Inventario de evidencias visuales
