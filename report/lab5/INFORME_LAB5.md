@@ -54,29 +54,50 @@ No se agregaron usuarios ni equipos adicionales.
 
 ## 3. Remediación de Log Injection (CWE-117, F-15)
 
-La corrección se trabaja en la rama `fix/log-injection-cwe117`, mediante el [PR #8](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/pull/8).
+La corrección se integró mediante el [PR #8](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/pull/8), que fue fusionado en `main`. La ejecución posterior del workflow de seguridad se realizó sobre el commit `27a871adde809ff74bbc2746be73d8c39c740927`.
 
 De acuerdo con la revisión recibida, las pruebas manuales con `%0a` y `%0d%0a` en la URL dejaron el registro en una sola línea. Durante esa revisión se identificó un caso adicional: valores no textuales en `analyst` o `alert_id` podían provocar HTTP 500 y, aun así, dejar guardada la acción.
 
 Se incorporó validación de tipo para ambos campos antes de modificar la colección de acciones. Los valores no textuales deben rechazarse con HTTP 400, sin guardar la acción. También se añadieron pruebas para valores numéricos y nulos, para comprobar que el estado no cambia ante solicitudes inválidas y para comprobar el registro de solicitudes con una ruta que contiene `%0a`. La prueba de ruta se ajustó para enviar la credencial de prueba requerida por el endpoint.
 
-El informe de hallazgos se actualizó para que F-15 haga referencia al SHA de remediación y no permanezca en la sección de limitaciones. Se documentó el alcance y las herramientas en `docs/SECURITY.md`. El PR #4, duplicado y con conflictos, se cerró; el fix continúa en el PR #8.
+El informe de hallazgos se actualizó para que F-15 haga referencia al SHA de remediación y no permanezca en la sección de limitaciones. Se documentó el alcance y las herramientas en `docs/SECURITY.md`. El PR #4, duplicado y con conflictos, se cerró. El PR #8 quedó integrado en `main`.
 
-**Estado de CI:** la ejecución correspondiente al commit `4729d0202f9e32d38834e1bf309cfbfa44302df9` finalizó con resultado **success** en GitHub Actions. El resultado confirma que el workflow terminó correctamente para ese commit.
+**Estado de CI:** la ejecución #21 del workflow `Seguridad estática - SAST y secretos`, sobre el commit `27a871adde809ff74bbc2746be73d8c39c740927`, finalizó con resultado **success** en 33 segundos. Generó dos artefactos: `resultado-semgrep` y `resultado-gitleaks`.
 
-## 4. Resumen de estado
+
+## 4. Resultados de SAST y detección de secretos
+
+La ejecución #21 del workflow de seguridad terminó correctamente. Los tres trabajos —Semgrep (SAST), pruebas de regresión y Gitleaks— finalizaron con estado exitoso. La ejecución tardó 33 segundos y generó dos artefactos.
+
+### 4.1 Semgrep
+
+Semgrep versión 1.185.0 examinó 26 rutas de archivos y no reportó errores de análisis. Identificó dos coincidencias de la regla `generic.nginx.security.request-host-used.request-host-used` en `nginx/lab3-fdsi.conf`, líneas 29 y 36. Ambas correspondían a la directiva `proxy_set_header Host $host;`, utilizada en los proxies de Alerts API y Actions API.
+
+El reporte clasificó las coincidencias como WARNING y las relacionó con CWE-290, con confianza media y estimaciones de probabilidad e impacto bajos. Se consideran advertencias que requieren validación contextual; por sí solas no demuestran explotación ni autenticación omitida.
+
+### 4.2 Remediación preventiva de encabezado Host
+
+Para evitar reenviar a los microservicios el valor Host recibido del cliente, se modificaron ambas directivas a `proxy_set_header Host $proxy_host;`. De esta forma Nginx utiliza el host del upstream definido en cada `proxy_pass` (127.0.0.1:5000 y 127.0.0.1:5001), en lugar de conservar el encabezado Host de la solicitud externa.
+
+El cambio se encuentra en esta misma rama de documentación y se propone para revisión en el PR #9. Antes de considerar cerrado el hallazgo se debe comprobar que los microservicios no dependan del Host externo, ejecutar las pruebas de integración y repetir Semgrep. La eliminación de la advertencia en un nuevo reporte y la ausencia de regresiones son condiciones para confirmar la remediación.
+
+### 4.3 Gitleaks
+
+Gitleaks finalizó correctamente y produjo un reporte JSON vacío (`[]`), por lo que no detectó secretos en el intervalo de commits configurado por el workflow (`HEAD~1..HEAD`). Este resultado no equivale a un análisis de todo el historial del repositorio.
+
+## 5. Resumen de estado
 
 | Elemento | Estado |
 |---|---|
-| CodeQL Default setup | Habilitado |
+| CodeQL Default setup | Habilitado |\n| Semgrep #21 | 2 advertencias `request-host-used` en Nginx; corrección preventiva propuesta, reescaneo pendiente |\n| Gitleaks #21 | 0 secretos detectados en `HEAD~1..HEAD` |
 | Secret Scanning | Habilitado |
 | Dependabot alerts | Habilitado |
 | Acceso a alertas | Configurado para administradores y equipos de seguridad |
-| Corrección F-15 | Cambios y pruebas añadidos al PR #8 |
-| CI del commit `4729d02` | Finalizado correctamente (success) |
-| Revisión y fusión del PR #8 | Pendientes |
+| Corrección F-15 | Integrada en `main` mediante PR #8 |
+| Workflow SAST/Gitleaks #21 | Finalizado correctamente (success), 33 s |
+| PR #8 | Fusionado en `main` |
 
-## 5. Inventario de evidencias visuales
+## 6. Inventario de evidencias visuales
 
 Las capturas recibidas y utilizadas para elaborar el informe PDF adjunto son:
 
@@ -86,9 +107,9 @@ Las capturas recibidas y utilizadas para elaborar el informe PDF adjunto son:
 4. **Estado de CodeQL y Secret Protection:** CodeQL Default setup visible y Secret Protection habilitado.
 5. **Dependabot alerts:** interruptor Dependabot alerts en estado On.
 
-## 6. Conclusión
+## 7. Conclusión
 
-Las capturas confirman la habilitación de CodeQL Default setup, Secret Scanning y Dependabot alerts. La remediación F-15 también cuenta con cambios y pruebas adicionales en el PR #8. Para cerrar esta parte del laboratorio es necesario verificar que CI finalice correctamente y obtener la revisión final antes de fusionar el PR.
+Las capturas confirman la habilitación de CodeQL Default setup, Secret Scanning y Dependabot alerts. La remediación F-15 fue integrada en `main`. La ejecución #21 confirmó el funcionamiento del workflow de Semgrep, pruebas y Gitleaks. Semgrep identificó dos advertencias asociadas al encabezado Host en Nginx; se preparó una corrección preventiva con `$proxy_host`, cuya validación final requiere pruebas de integración y una nueva ejecución de Semgrep.
 
 ---
 
