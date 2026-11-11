@@ -22,7 +22,7 @@ El Log Injection (CWE-117) se corrigió en la Parte 1 (ver F-15).
 
 | Control | Antes (`6440081`) | Después (`security/lab-fsi`) |
 |---|---|---|
-| Semgrep (`p/owasp-top-ten`, `p/secrets`) | 15 resultados (línea base) | 2 resultados tras la primera remediación; 0 tras corregir F-16 (`ca6fa69`) |
+| Semgrep (`p/owasp-top-ten`, `p/secrets`) | 15 resultados | 2 resultados (riesgo aceptado, F-16) |
 | OWASP ZAP baseline | 1 Medium, 4 Low, 2 Info | 0 Medium, 4 Low, 2 Info |
 | pip-audit | 1 aviso (2 registros del mismo PYSEC) en Flask | 0 avisos |
 | `GET /alerts` sin credencial | 200 | 401 |
@@ -56,7 +56,7 @@ La severidad es la asignada por el equipo según impacto real. Semgrep reporta `
 | F-06 / SCA | Flask 3.0.3 con aviso y Werkzeug sin fijar | pip-audit | CVE-2026-27205 | Baja | Verdadero, no explotable aquí | Corregido | `f971d02` |
 | F-14 | Modo debug de Flask | Lista de la tarea | CWE-489 | n/a | Ya estaba corregido | Prueba de regresión | `0efcada` |
 | F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Corregido** | `326e488` |
-| F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | **Corregido** | `ca6fa69` |
+| F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | Riesgo aceptado | n/a |
 | **F-17** | Los mismos `Host $host` en `evidence/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
 | **F-18** | Credencial en script de validación | Gitleaks | CWE-798 | n/a | **Falsa alarma** | Documentado | n/a |
 
@@ -88,7 +88,7 @@ Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: 
 
 - **Título:** `request-host-used` reportado en archivos de evidencia.
 - **Análisis:** 4 de los 6 resultados de esta regla están en `evidence/blue/nginx-config-before.conf` y `evidence/server-nginx.txt`, copias históricas del Lab 3 que no se despliegan.
-- **Decisión:** no se editan porque son evidencia. Se excluyen del escaneo con `.semgrepignore`. Los 2 resultados de la configuración viva se registraron como F-16. La corrección posterior reemplazó `$host` por `$proxy_host` en las dos directivas activas; el commit `ca6fa69` corrigió F-16 y el reescaneo de Semgrep quedó en 0.
+- **Decisión:** no se editan porque son evidencia. Se excluyen del escaneo con `.semgrepignore`. Los 2 resultados de la configuración viva se mantienen visibles como F-16.
 
 ## Hallazgo F-18 (falsa alarma)
 
@@ -98,7 +98,7 @@ Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: 
 
 ## Resultado en CI
 
-Corrida [42908756960](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/actions/runs/42908756960) sobre el Pull Request #3: pruebas de regresión 44 de 44, Semgrep 1.185.0 con 2 resultados de F-16 en esa ejecución intermedia, y Gitleaks con 1 resultado (F-18). En el reescaneo posterior a `ca6fa69`, Semgrep reportó 0 resultados.
+Corrida [42908756960](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/actions/runs/42908756960) sobre el Pull Request #3: pruebas de regresión 44 de 44, Semgrep 1.185.0 con los mismos 2 resultados de F-16, y Gitleaks con 1 resultado (F-18).
 
 ## Decisión SCA (Flask y Werkzeug)
 
