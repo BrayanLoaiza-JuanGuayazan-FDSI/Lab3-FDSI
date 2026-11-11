@@ -40,6 +40,7 @@ Pull request de la corrección: [#8 — Log Injection CWE-117](https://github.co
 
 - **Antes:** la revisión detectó que una entrada con saltos de línea podía contaminar los registros.
 - **Después:** el revisor confirmó manualmente que las rutas con `%0a` y `%0d%0a` quedan registradas en una sola línea.
+- **Validación manual de F-15:** [`validacion-f15.txt`](../evidence/lab5/validacion-f15.txt), con la misma petición antes y después, pasando por Nginx.
 - **Regresión:** ejecutar `python -m pytest tests -v` desde la raíz del repositorio.
 - **Evidencia automatizada:** consultar los artefactos de los workflows en la pestaña Actions del repositorio.
 - **CI:** el workflow de seguridad terminó con éxito sobre `27a871a`, el commit de fusión del PR #8 en `main`.

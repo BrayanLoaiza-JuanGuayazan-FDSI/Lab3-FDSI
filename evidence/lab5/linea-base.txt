@@ -1,0 +1,12 @@
+# Linea base del repositorio (Lab 5)
+Repositorio: https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI
+Responsables: Brayan Loaiza Leal (brloa05), Juan Sebastian Guayazan Clavijo (JuanGuayazanC)
+Tecnologia: Python 3.12, Flask 3.1.3, Werkzeug 3.1.9, Nginx, frontend HTML/JS estatico
+APIs: alerts-api (:5000) y actions-api (:5001), solo loopback, publicadas por Nginx en /api/alerts/ y /api/actions/
+Autenticacion: header X-API-Key en todas las rutas excepto /health
+
+Commit de linea base evaluado: 644008184e704fc4cb0839967e8902f086008784 (rama chore/estructura-minima)
+main despues de las correcciones: 27a871adde809ff74bbc2746be73d8c39c740927
+
+$ git ls-remote origin main
+27a871adde809ff74bbc2746be73d8c39c740927	refs/heads/main

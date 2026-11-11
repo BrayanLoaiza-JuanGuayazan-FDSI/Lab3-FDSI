@@ -1,0 +1,20 @@
+# F-15 Log Injection (CWE-117): validacion manual no destructiva
+# Fecha: 2026-11-11 04:38:06 UTC. Staging local Docker, pasando por Nginx, datos ficticios.
+# Hipotesis: un %0a en la ruta se decodifica y escribe una linea falsa en alerts.log.
+# Esperado antes: linea falsa propia. Esperado despues: una sola linea con \n literal.
+
+=== ANTES commit 6440081
+$ curl -s -o /dev/null -w 'HTTP %{http_code}' 'http://127.0.0.1:8096/api/alerts/x%0a2026-11-10%20CRITICAL%20AdminLogin%20SUCCESS'
+HTTP 404
+--- alerts.log (solo esta peticion):
+10:2026-11-11 04:38:06,536 INFO REQUEST GET /x
+11-2026-11-10 CRITICAL AdminLogin SUCCESS from 172.17.0.1 UA:curl/8.19.0
+--- lineas que empiezan como evento CRITICAL falso: 2
+
+=== DESPUES main 27a871a
+$ curl -s -o /dev/null -w 'HTTP %{http_code}' -H 'X-API-Key: <clave de staging>' 'http://127.0.0.1:8097/api/alerts/x%0a2026-11-10%20CRITICAL%20AdminLogin%20SUCCESS'
+HTTP 404
+--- alerts.log (solo esta peticion):
+7:2026-11-11 04:38:08,088 INFO REQUEST GET /x\n2026-11-10 CRITICAL AdminLogin SUCCESS from 172.17.0.1 UA:curl/8.19.0
+8-2026-11-11 04:38:08,088 INFO RESPONSE 404 for GET /x\n2026-11-10 CRITICAL AdminLogin SUCCESS
+--- lineas que empiezan como evento CRITICAL falso: 0
