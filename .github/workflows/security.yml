@@ -47,9 +47,23 @@ jobs:
           fetch-depth: 0
       - name: Instalar Gitleaks CLI
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)_linux_x64.tar.gz -o gitleaks.tar.gz
+          set -euo pipefail
+
+          ASSET_URL=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+            | jq -r '.assets[] | select(.name | endswith("_linux_x64.tar.gz")) | .browser_download_url' \
+            | head -n 1)
+
+          if [ -z "$ASSET_URL" ]; then
+            echo "No se encontró el archivo de Gitleaks para Linux x64"
+            exit 1
+          fi
+
+          echo "Descargando Gitleaks desde: $ASSET_URL"
+          curl -fsSL "$ASSET_URL" -o gitleaks.tar.gz
+
           tar -xzf gitleaks.tar.gz gitleaks
           chmod +x gitleaks
+          ./gitleaks version
       - name: Detección de secretos
         run: ./gitleaks detect --source . --log-opts="HEAD~1..HEAD" --report-format json --report-path gitleaks.json --no-banner || true
       - name: Publicar evidencia
