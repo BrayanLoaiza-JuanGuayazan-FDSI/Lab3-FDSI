@@ -30,10 +30,10 @@ systemctl enable nginx
 
 # 4. Instalar dependencias Python para microservicios
 echo "[4/7] Instalando dependencias Python..."
-cd services/alerts-api
+cd src/alerts-api
 pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
-cd services/actions-api
+cd src/actions-api
 pip3 install -r requirements.txt -q --break-system-packages
 cd ../../
 
@@ -52,7 +52,7 @@ After=network.target
 
 [Service]
 User=$SERVICE_USER
-WorkingDirectory=$WORKDIR/services/alerts-api
+WorkingDirectory=$WORKDIR/src/alerts-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
 Environment=FLASK_ENV=production
@@ -68,7 +68,7 @@ After=network.target
 
 [Service]
 User=$SERVICE_USER
-WorkingDirectory=$WORKDIR/services/actions-api
+WorkingDirectory=$WORKDIR/src/actions-api
 ExecStart=/usr/bin/python3 app.py
 Restart=always
 Environment=FLASK_ENV=production

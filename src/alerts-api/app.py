@@ -77,9 +77,17 @@ ALERTS = [
 
 ACTIONS_LOG = []
 
+def sanitize_log(value: str) -> str:
+    """Neutraliza saltos de línea para prevenir Log Injection (CWE-117)."""
+    return value.replace('\n', '\\n').replace('\r', '\\r')
+
+
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {request.headers.get('X-Real-IP', request.remote_addr)} UA:{request.headers.get('User-Agent','')}")
+    path = sanitize_log(request.path)
+    ua   = sanitize_log(request.headers.get('User-Agent', ''))
+    ip   = request.headers.get('X-Real-IP', request.remote_addr)
+    logging.info(f"REQUEST {request.method} {path} from {ip} UA:{ua}")
 
 @app.after_request
 def log_response(response):

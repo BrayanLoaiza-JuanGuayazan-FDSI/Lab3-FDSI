@@ -48,9 +48,15 @@ def client_ip():
     # escucha en loopback, por lo que este header no puede venir del cliente.
     return request.headers.get('X-Real-IP', request.remote_addr)
 
+def sanitize_log(value: str) -> str:
+    """Neutraliza saltos de línea para prevenir Log Injection (CWE-117)."""
+    return value.replace('\n', '\\n').replace('\r', '\\r')
+
+
 @app.before_request
 def log_request():
-    logging.info(f"REQUEST {request.method} {request.path} from {client_ip()}")
+    path = sanitize_log(request.path)
+    logging.info(f"REQUEST {request.method} {path} from {client_ip()}")
 
 @app.route('/', methods=['GET'])
 def index():

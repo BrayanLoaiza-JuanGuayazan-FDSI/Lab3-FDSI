@@ -72,11 +72,11 @@ cd Lab3-FDSI
 pip3 install flask
 
 # Terminal 1 — Alerts API
-cd services/alerts-api
+cd src/alerts-api
 python3 app.py
 
 # Terminal 2 — Actions API
-cd services/actions-api
+cd src/actions-api
 python3 app.py
 
 # Terminal 3 — Frontend
