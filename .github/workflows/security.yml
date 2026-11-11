@@ -21,7 +21,7 @@ jobs:
         run: semgrep scan --config p/owasp-top-ten --config p/secrets --json --output semgrep.json || true
       - name: Publicar evidencia
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: resultado-semgrep
           path: semgrep.json
@@ -68,7 +68,7 @@ jobs:
         run: ./gitleaks detect --source . --log-opts="HEAD~1..HEAD" --report-format json --report-path gitleaks.json --no-banner || true
       - name: Publicar evidencia
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: resultado-gitleaks
           path: gitleaks.json
