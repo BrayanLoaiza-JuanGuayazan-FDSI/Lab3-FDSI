@@ -55,7 +55,7 @@ La severidad es la asignada por el equipo según impacto real. Semgrep reporta `
 | F-13 | Dependabot sin periodo de espera | Semgrep (severidad MEDIUM) | CWE-1357 | Baja | Verdadero | Corregido | `13226ba` |
 | F-06 / SCA | Flask 3.0.3 con aviso y Werkzeug sin fijar | pip-audit | CVE-2026-27205 | Baja | Verdadero, no explotable aquí | Corregido | `f971d02` |
 | F-14 | Modo debug de Flask | Lista de la tarea | CWE-489 | n/a | Ya estaba corregido | Prueba de regresión | `0efcada` |
-| F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Corregido** | `fix/log-injection-cwe117` |
+| F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Corregido** | `326e488` |
 | F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | Riesgo aceptado | n/a |
 | **F-17** | Los mismos `Host $host` en `evidence/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
 | **F-18** | Credencial en script de validación | Gitleaks | CWE-798 | n/a | **Falsa alarma** | Documentado | n/a |
@@ -113,7 +113,6 @@ Corrida [42908756960](https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDS
 - **Staging:** el DAST y la validación corrieron en Docker local, no en la VM del laboratorio, que no estuvo accesible. `deploy.sh` solo pasó verificación de sintaxis (`bash -n`).
 - **ZAP pasivo** solo vio el frontend. Tras la corrección las APIs responden `401` al escáner, por lo que no analiza sus respuestas autenticadas.
 - **Servidor de desarrollo:** las APIs siguen usando el servidor de Werkzeug, detrás de Nginx y solo en loopback.
-- **Log Injection (F-15):** corregido en `fix/log-injection-cwe117` — `sanitize_log()` en los 4 puntos de las 2 APIs.
 
 ## Reflexión final
 
