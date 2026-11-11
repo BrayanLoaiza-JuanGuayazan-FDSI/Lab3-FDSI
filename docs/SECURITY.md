@@ -18,9 +18,12 @@
 | Detección de secretos en CI | Gitleaks | Workflow `.github/workflows/security.yml`; publica el reporte como artefacto. |
 | SCA | Dependabot | `.github/dependabot.yml`: actualizaciones semanales para pip (ambas APIs) y GitHub Actions, con periodo de espera de 7 días. |
 | DAST pasivo | OWASP ZAP Baseline | Evidencia y configuración en `evidence/lab5/`; ejecutado contra staging local. |
-| Code scanning | CodeQL | La activación de CodeQL Default Setup debe confirmarse en Settings → Security → Code security and analysis. No se afirma habilitado hasta verificarlo allí. |
-| Alertas de dependencias | Dependabot alerts | La activación debe confirmarse en Settings → Security → Code security and analysis. |
-| Secret scanning | GitHub secret scanning | La activación debe confirmarse en Settings → Security → Code security and analysis. |
+| Code scanning | CodeQL Default setup | **Activo** desde 2026-11-10: Python, JavaScript/TypeScript y Actions. Análisis completado sin alertas. Evidencia: [configuración](../evidence/lab5/github-controles/03-codeql-settings.png), [Actions](../evidence/lab5/github-controles/05-codeql-actions.png), [JavaScript](../evidence/lab5/github-controles/06-codeql-javascript.png), [Python](../evidence/lab5/github-controles/07-codeql-python.png), [alertas](../evidence/lab5/github-controles/08-alertas-code-scanning.png). |
+| Alertas de dependencias | Dependabot alerts | **Activo** desde 2026-11-10. Al 2026-11-11: 0 alertas abiertas y 1 corregida (`pytest`, CVE-2025-71176, severidad media, cerrada al fusionar el PR #11). Evidencia: [grafo de dependencias](../evidence/lab5/github-controles/01-dependency-graph.png), [configuración](../evidence/lab5/github-controles/02-dependabot-settings.png) y [estado actualizado de las alertas](../evidence/lab5/github-controles/09-alertas-dependabot.png). |
+| Secret scanning | GitHub secret scanning | **Activo** desde 2026-11-10, con 0 alertas abiertas. Detecta secretos ya presentes en el repositorio. Evidencia: [configuración](../evidence/lab5/github-controles/04-secret-protection.png), [alertas](../evidence/lab5/github-controles/10-alertas-secret-scanning.png). |
+| Push protection | GitHub secret scanning push protection | **Activo** desde 2026-11-10. Es un ajuste independiente: bloquea el push que contenga un secreto compatible. Evidencia: [configuración](../evidence/lab5/github-controles/04-secret-protection.png) y API del repositorio (`secret_scanning_push_protection=enabled`). |
+
+**Limitación de CodeQL:** el análisis capturado corresponde al commit `01389df` de `main`, anterior a la corrección de Log Injection (PR #8). Con la suite por defecto reportó 0 alertas aunque ese commit aún tenía F-15, por lo que un resultado limpio no demuestra ausencia de vulnerabilidades. El análisis más reciente de `main`, sobre `21d6f92`, tampoco reporta alertas.
 
 **Nota:** los workflows de Semgrep y Gitleaks no sustituyen las funciones nativas de GitHub Dependabot alerts, CodeQL ni secret scanning. La existencia de `.github/dependabot.yml` configura actualizaciones, pero no demuestra por sí sola que Dependabot alerts esté habilitado.
 
@@ -38,9 +41,10 @@ Pull request de la corrección: [#8 — Log Injection CWE-117](https://github.co
 
 - **Antes:** la revisión detectó que una entrada con saltos de línea podía contaminar los registros.
 - **Después:** el revisor confirmó manualmente que las rutas con `%0a` y `%0d%0a` quedan registradas en una sola línea.
+- **Validación manual de F-15:** [`validacion-f15.txt`](../evidence/lab5/validacion-f15.txt), con la misma petición antes y después, pasando por Nginx.
 - **Regresión:** ejecutar `python -m pytest tests -v` desde la raíz del repositorio.
 - **Evidencia automatizada:** consultar los artefactos de los workflows en la pestaña Actions del repositorio.
-- **Revisión pendiente:** confirmar los resultados de la ejecución de CI sobre el último commit del PR #8 antes de fusionarlo.
+- **CI:** el workflow de seguridad terminó con éxito sobre `27a871a`, el commit de fusión del PR #8 en `main`.
 
 ## 5. Operación segura
 
@@ -49,4 +53,4 @@ Pull request de la corrección: [#8 — Log Injection CWE-117](https://github.co
 3. No incluir secretos, tokens ni datos personales en capturas, logs o reportes.
 4. Revisar manualmente los hallazgos de SAST, SCA y detección de secretos antes de clasificarlos.
 5. Corregir mediante Pull Requests y conservar evidencia de la prueba de regresión y el reescaneo.
-6. No fusionar el PR #8 hasta que pasen las pruebas y el revisor confirme los cambios.
+6. No fusionar un Pull Request hasta que pasen las pruebas y el revisor confirme los cambios.

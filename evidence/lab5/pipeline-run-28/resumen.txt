@@ -1,0 +1,14 @@
+# Workflow 'Seguridad estatica - SAST y secretos', ejecucion #28
+# https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/actions/runs/42956688617
+Rama: docs/lab5-report
+Commit: 133945d5b45f24f9fd327eb67a46cd9009fe245d
+Resultado: success
+Fecha: 2026-11-11T04:03:12Z
+
+Pruebas de regresion de seguridad: success
+Semgrep (SAST): success
+Gitleaks (secret scanning): success
+
+Semgrep 1.185.0: 0 resultados, 0 errores, 27 rutas analizadas (semgrep.json).
+Gitleaks: 0 resultados en el intervalo HEAD~1..HEAD (gitleaks.json). No cubre todo el historial.
+Nota: los pasos de Semgrep y Gitleaks terminan con || true; un job en verde no implica cero hallazgos.
