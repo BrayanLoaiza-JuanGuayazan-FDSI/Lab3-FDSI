@@ -1,8 +1,8 @@
 \documentclass[journal]{IEEEtran}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[spanish]{babel}
-\addto\captionsspanish{\renewcommand{\abstractname}{Resumen}}
+\usepackage[spanish,english]{babel}
+\addto\captionsenglish{\renewcommand{\abstractname}{Abstract}}
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{float}
@@ -12,6 +12,7 @@
 \hyphenation{op-tical net-works semi-}
 
 \begin{document}
+\selectlanguage{spanish}
 
 \title{Bit\'acora de Ghidra: CODEBREAKERS\\
 \large \textit{El misterio del c\'odigo oculto}\\
@@ -30,20 +31,22 @@ Juan Sebasti\'an Guayaz\'an Clavijo
 
 \maketitle
 
+\begin{otherlanguage}{english}
 \begin{abstract}
-Este documento registra, en el orden en que se hizo, c\'omo se analiz\'o en Ghidra
-el programa del reto CODEBREAKERS hasta encontrar la clave y obtener la FLAG, sin
-acceso al c\'odigo fuente. Se parte de una ejecuci\'on con una clave falsa, se
-importa el binario en Ghidra, se localizan las cadenas del programa y se sigue la
-referencia al mensaje de acceso hasta \texttt{main}. All\'i se identifica un
-descifrado AES-256-CBC cuya clave e IV est\'an en texto plano dentro del
-ejecutable; se reproduce el descifrado con OpenSSL y se comprueba la clave
-obtenida ejecutando el programa.
+This document records, in the order it was done, how the CODEBREAKERS challenge
+program was analyzed in Ghidra until the key was found and the FLAG obtained,
+without access to the source code. The analysis starts from a run with a wrong
+key, imports the binary into Ghidra, locates the program strings and follows the
+reference to the access message up to \texttt{main}. There, an AES-256-CBC
+decryption is identified whose key and IV are stored in plain text inside the
+executable; the decryption is reproduced with OpenSSL and the recovered key is
+verified by running the program.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Ghidra, ingenier\'ia inversa, CTF, AES-256-CBC, an\'alisis est\'atico.
+Ghidra, reverse engineering, CTF, AES-256-CBC, static analysis.
 \end{IEEEkeywords}
+\end{otherlanguage}
 
 \IEEEpeerreviewmaketitle
 

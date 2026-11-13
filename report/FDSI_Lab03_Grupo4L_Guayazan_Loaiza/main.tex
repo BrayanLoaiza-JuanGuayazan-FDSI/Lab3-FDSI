@@ -5,8 +5,8 @@
 % ============================================================================
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[spanish]{babel}
-\addto\captionsspanish{\renewcommand{\abstractname}{Resumen}}
+\usepackage[spanish,english]{babel}
+\addto\captionsenglish{\renewcommand{\abstractname}{Abstract}}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{array}
@@ -68,42 +68,43 @@ CrowdStrike Falcon Alert Simulator
 % DOCUMENTO
 % ============================================================================
 \begin{document}
+\selectlanguage{spanish}
 
 \maketitle
 
 % ============================================================================
-% RESUMEN
+% ABSTRACT (en inglés)
 % ============================================================================
+\begin{otherlanguage}{english}
 \begin{abstract}
-Este documento presenta la entrega consolidada (Parte I y Parte II) del
-Laboratorio 03 de Fundamentos de Seguridad de la Información, correspondiente
-al reto Secure Product Challenge. El equipo seleccionó la Opción 1
-(automatización de incidentes de CrowdStrike Falcon) y desarrolló un
-prototipo denominado \textit{CrowdStrike Falcon Alert Simulator}: dos
-microservicios Flask (\texttt{alerts-api} y \texttt{actions-api}) que simulan
-la recepción, consulta y registro de acciones sobre alertas ficticias de
-seguridad, junto con un dashboard estático servido por Nginx, desplegado
-sobre una VM Ubuntu Server 26.04.1 LTS en VMware Workstation. La Parte I
-construyó y publicó una línea base deliberadamente insegura (HTTP sin TLS,
-sin autenticación) y un modelo inicial de amenazas STRIDE con una hipótesis
-por cada una de las seis categorías. La Parte II ejecuta el ciclo completo
-Atacar $\rightarrow$ Detectar $\rightarrow$ Corregir $\rightarrow$ Verificar:
-reconocimiento Red Team con Nmap, curl y OWASP ZAP en modo pasivo desde una
-estación Kali Linux; captura de tráfico y una regla de detección de Blue Team
-validada contra el log real del servidor; hardening de Nginx, corrección del
-código de los microservicios (bind a \texttt{127.0.0.1}, remoción de
-\texttt{debug=True} y de \texttt{/debug/env}) y un firewall UFW restringido
-al segmento del laboratorio; y un retest final que reduce la superficie de
-ataque expuesta a la red de tres puertos con huella de versión completa a un
-solo puerto sin versión, sin romper la funcionalidad del dashboard ni de las
-APIs. Las pruebas y evidencias presentadas se limitan al entorno autorizado
-para el laboratorio y utilizan exclusivamente datos ficticios.
+This report presents the consolidated delivery (Part I and Part II) of the
+Information Security Fundamentals laboratory on the Secure Product Challenge.
+The team chose Option 1 (CrowdStrike Falcon incident automation) and built a
+prototype named \textit{CrowdStrike Falcon Alert Simulator}: two Flask
+microservices (\texttt{alerts-api} and \texttt{actions-api}) that simulate
+receiving, querying and recording actions on fictitious security alerts,
+together with a static dashboard served by Nginx, deployed on an Ubuntu Server
+26.04.1 LTS VM in VMware Workstation. Part I built and published a deliberately
+insecure baseline (HTTP without TLS, no authentication) and an initial STRIDE
+threat model with one hypothesis for each of the six categories. Part II runs
+the full cycle Attack $\rightarrow$ Detect $\rightarrow$ Fix $\rightarrow$
+Verify: Red Team reconnaissance with Nmap, curl and OWASP ZAP in passive mode
+from a Kali Linux workstation; traffic capture and a Blue Team detection rule
+validated against the real server log; Nginx hardening, microservice code fixes
+(binding to \texttt{127.0.0.1}, removal of \texttt{debug=True} and of
+\texttt{/debug/env}) and a UFW firewall restricted to the laboratory segment;
+and a final retest that reduces the network-exposed attack surface from three
+ports with full version fingerprinting to a single port without version
+disclosure, without breaking the dashboard or the APIs. The tests and evidence
+presented are limited to the environment authorized for the laboratory and use
+fictitious data exclusively.
 \end{abstract}
 
 \begin{IEEEkeywords}
 HTTP, Nginx, Flask, Red Team, Blue Team, STRIDE, Threat Modeling,
-CrowdStrike Falcon, microservicios, Ubuntu Server.
+CrowdStrike Falcon, microservices, Ubuntu Server.
 \end{IEEEkeywords}
+\end{otherlanguage}
 
 \IEEEpeerreviewmaketitle
 
