@@ -1,0 +1,1213 @@
+\documentclass[journal]{IEEEtran}
+
+% ============================================================================
+% PAQUETES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,english]{babel}
+\addto\captionsenglish{\renewcommand{\abstractname}{Abstract}}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{float}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{longtable}
+\usepackage{pdflscape}
+
+% ============================================================================
+% CONFIGURACIÓN DE CÓDIGO
+% ============================================================================
+\lstset{
+  backgroundcolor=\color{gray!10},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{orange},
+  captionpos=b,
+  tabsize=2
+}
+
+% ============================================================================
+% DATOS DEL DOCUMENTO
+% ============================================================================
+\title{
+Red Team + Blue Team: Aplicación Web Pública por HTTP:\\
+Construir, Atacar, Detectar, Corregir y Verificar\\
+\large \textit{Prototipo: CrowdStrike Falcon Alert Simulator}
+}
+
+\author{
+Brayan Loaiza Leal,
+Juan Sebastián Guayazán Clavijo
+\thanks{Entrega consolidada --- Parte I y Parte II}
+\thanks{Fundamentos de Seguridad de la Información}
+\thanks{Ingeniería de Sistemas}
+\thanks{Escuela Colombiana de Ingeniería Julio Garavito}
+\thanks{2026-2, Segundo Tercio}
+}
+
+\markboth{
+Laboratorio 03 --- Red Team vs. Blue Team
+}{
+CrowdStrike Falcon Alert Simulator
+}
+
+% ============================================================================
+% DOCUMENTO
+% ============================================================================
+\begin{document}
+\selectlanguage{spanish}
+
+\maketitle
+
+% ============================================================================
+% ABSTRACT (en inglés)
+% ============================================================================
+\begin{otherlanguage}{english}
+\begin{abstract}
+This report presents the consolidated delivery (Part I and Part II) of the
+Information Security Fundamentals laboratory on the Secure Product Challenge.
+The team chose Option 1 (CrowdStrike Falcon incident automation) and built a
+prototype named \textit{CrowdStrike Falcon Alert Simulator}: two Flask
+microservices (\texttt{alerts-api} and \texttt{actions-api}) that simulate
+receiving, querying and recording actions on fictitious security alerts,
+together with a static dashboard served by Nginx, deployed on an Ubuntu Server
+26.04.1 LTS VM in VMware Workstation. Part I built and published a deliberately
+insecure baseline (HTTP without TLS, no authentication) and an initial STRIDE
+threat model with one hypothesis for each of the six categories. Part II runs
+the full cycle Attack $\rightarrow$ Detect $\rightarrow$ Fix $\rightarrow$
+Verify: Red Team reconnaissance with Nmap, curl and OWASP ZAP in passive mode
+from a Kali Linux workstation; traffic capture and a Blue Team detection rule
+validated against the real server log; Nginx hardening, microservice code fixes
+(binding to \texttt{127.0.0.1}, removal of \texttt{debug=True} and of
+\texttt{/debug/env}) and a UFW firewall restricted to the laboratory segment;
+and a final retest that reduces the network-exposed attack surface from three
+ports with full version fingerprinting to a single port without version
+disclosure, without breaking the dashboard or the APIs. The tests and evidence
+presented are limited to the environment authorized for the laboratory and use
+fictitious data exclusively.
+\end{abstract}
+
+\begin{IEEEkeywords}
+HTTP, Nginx, Flask, Red Team, Blue Team, STRIDE, Threat Modeling,
+CrowdStrike Falcon, microservices, Ubuntu Server.
+\end{IEEEkeywords}
+\end{otherlanguage}
+
+\IEEEpeerreviewmaketitle
+
+% ============================================================================
+% 1. PORTADA Y DATOS DEL EQUIPO
+% ============================================================================
+% Cubierto por \maketitle (título, autores, afiliación, fecha del tercio).
+
+% ============================================================================
+% 2. DESCRIPCIÓN DEL PROYECTO
+% ============================================================================
+\section{Descripción del Proyecto}
+
+\subsection{Problema seleccionado}
+
+Opción 1: automatización de incidentes de CrowdStrike Falcon. La recepción,
+clasificación, enriquecimiento y escalamiento de alertas de seguridad suele
+requerir actividades manuales que aumentan el tiempo de respuesta, dificultan
+la correlación de evidencias y generan criterios distintos al priorizar
+incidentes. Para este laboratorio se seleccionó la construcción de un
+prototipo denominado \textit{CrowdStrike Falcon Alert Simulator}, diseñado
+exclusivamente para fines académicos y utilizando información completamente
+ficticia, sin integración real con la API de CrowdStrike.
+
+\subsection{Objetivo de la primera versión}
+
+Construir y publicar, mediante HTTP y sin autenticación, un prototipo que
+reciba alertas ficticias de CrowdStrike Falcon, permita consultarlas mediante
+una API REST y registre las acciones de respuesta ejecutadas por analistas.
+Esta versión establece una línea base técnica y una superficie controlada
+para las posteriores actividades de Red Team y Blue Team.
+
+\subsection{Usuarios previstos}
+
+Analistas SOC (Blue Team) que consultan el dashboard y registran acciones de
+respuesta sobre las alertas; el equipo Red Team, que ejercerá reconocimiento
+autorizado (Nmap, curl, ZAP) sobre la superficie expuesta en la Parte II desde
+una estación Kali Linux.
+
+\subsection{Datos ficticios}
+
+El prototipo utiliza únicamente información creada para el laboratorio:
+
+\begin{itemize}
+    \item Cinco alertas precargadas (\texttt{ALT-001}--\texttt{ALT-005}):
+    malware, movimiento lateral, escalamiento de privilegios, fuerza bruta y
+    exfiltración de datos.
+    \item Tres acciones de analista precargadas (\texttt{ACT-001}--\texttt{ACT-003}).
+    \item Usuarios y hosts ficticios: \texttt{john.doe}, \texttt{jane.smith},
+    \texttt{carlos.garcia}, \texttt{maria.torres}, \texttt{contractor01};
+    \texttt{WORKSTATION-42}, \texttt{SERVER-DC01}, entre otros.
+\end{itemize}
+
+No se utilizan credenciales, tokens, información personal, direcciones
+internas reales ni información perteneciente a sistemas de producción.
+
+\subsection{Alcance y exclusiones}
+
+El alcance de esta primera versión comprende:
+
+\begin{itemize}
+    \item Dos microservicios REST en Flask (\texttt{alerts-api} en el puerto
+    5000, \texttt{actions-api} en el puerto 5001).
+    \item Un dashboard estático servido por Nginx que consume ambas APIs.
+    \item Publicación mediante Nginx sobre Ubuntu Server, protocolo HTTP sobre
+    el puerto TCP 80, con proxy inverso hacia los microservicios.
+    \item Registro de eventos mediante los logs de Nginx y de cada
+    microservicio.
+    \item Documentación de la arquitectura, los flujos de información y la
+    estructura del repositorio.
+    \item Elaboración de un modelo inicial de amenazas mediante STRIDE (seis
+    categorías).
+\end{itemize}
+
+Se excluyen de esta versión: información real, autenticación y autorización,
+HTTPS/TLS (Laboratorio 4), persistencia en base de datos (los datos viven en
+memoria), integración real con la API de CrowdStrike, explotación destructiva,
+denegación de servicio, fuerza bruta, persistencia, y las rondas activas de
+Red/Blue Team con Nmap, ZAP, tcpdump y hardening formal, que corresponden a la
+Parte II de este mismo laboratorio.
+
+\subsection{Resultado esperado del despliegue}
+
+Al finalizar esta primera versión se dispone de un prototipo accesible desde
+la VM del laboratorio mediante HTTP, con Nginx y los dos microservicios
+correctamente configurados como servicios \texttt{systemd}, registros de
+acceso y errores disponibles para su análisis, una arquitectura documentada
+(incluyendo un hallazgo real de diseño corregido) y un modelo inicial de
+amenazas que sirve de línea base para las siguientes fases del reto.
+
+% ============================================================================
+% 3. ARQUITECTURA IMPLEMENTADA
+% ============================================================================
+\section{Arquitectura Implementada}
+
+La arquitectura implementada corresponde a dos microservicios Flask sin
+autenticación, un dashboard estático y un proxy Nginx, publicados por HTTP
+sobre una VM Ubuntu Server. La estación Kali Linux representará, en la
+Parte II, el entorno desde el cual se realizan las pruebas autorizadas de
+Red Team; el Blue Team observará el comportamiento del servidor mediante sus
+registros.
+
+\subsection{Actores}
+
+\begin{itemize}
+    \item \textbf{Analista SOC / Blue Team:} consulta el dashboard y registra
+    acciones de respuesta.
+    \item \textbf{Red Team / Kali (Parte II):} realiza reconocimiento y
+    pruebas autorizadas (Nmap, curl, ZAP).
+    \item \textbf{Cliente HTTP anónimo:} cualquier origen en la red del
+    laboratorio; no existe distinción de privilegio porque no hay
+    autenticación.
+    \item \textbf{Administrador/Builder:} mantiene el repositorio, el servidor
+    y la configuración de Nginx.
+\end{itemize}
+
+\subsection{Componentes}
+
+\begin{itemize}
+    \item Nginx (proxy inverso y contenido estático, puerto 80).
+    \item \texttt{alerts-api} --- microservicio Flask (puerto 5000).
+    \item \texttt{actions-api} --- microservicio Flask (puerto 5001).
+    \item Dashboard estático (\texttt{frontend/index.html}).
+    \item Registros \texttt{lab3\_access.log}, \texttt{lab3\_error.log}
+    (Nginx), \texttt{alerts.log}, \texttt{actions.log} (Flask).
+\end{itemize}
+
+\subsection{Flujos de datos}
+
+\begin{center}
+\textbf{Navegador}
+$\rightarrow$
+\textbf{Nginx (:80)}
+$\rightarrow$
+\textbf{proxy\_pass /api/alerts/ y /api/actions/}
+$\rightarrow$
+\textbf{alerts-api (:5000) / actions-api (:5001)}
+\end{center}
+
+\textbf{Hallazgo de arquitectura corregido durante esta entrega:} el
+JavaScript del dashboard llamaba originalmente de forma directa a
+\texttt{http://<host>:5000}, evitando el proxy de Nginx. Al desplegar en la VM
+real se detectó que esa llamada cruzada de puerto era bloqueada por CORS en el
+navegador (Flask no envía \texttt{Access-Control-Allow-Origin}), mientras que
+\texttt{curl} sí funcionaba, ocultando el problema en pruebas de servidor a
+servidor. Se corrigió \texttt{frontend/index.html} para consumir la API vía
+el proxy (\texttt{/api/alerts/alerts}), quedando \textit{same-origin}; el
+retest con captura de navegador confirma la corrección (Sección
+\ref{sec:evidencia-servidor}).
+
+\subsection{Almacenes de datos}
+
+El prototipo no usa base de datos: los datos viven en listas de Python en
+memoria dentro de cada microservicio, sin persistencia entre reinicios.
+
+\begin{lstlisting}
+ALERTS  -> lista en memoria (alerts-api)
+ACTIONS -> lista en memoria (actions-api)
+\end{lstlisting}
+
+Los registros del servidor constituyen la fuente de trazabilidad:
+
+\begin{lstlisting}[language=bash]
+/var/log/nginx/lab3_access.log
+/var/log/nginx/lab3_error.log
+services/alerts-api/alerts.log
+services/actions-api/actions.log
+\end{lstlisting}
+
+\subsection{Protocolo y puertos}
+
+\begin{table}[H]
+\centering
+\caption{Protocolos y puertos principales}
+\label{tab:protocolos}
+\begin{tabular}{|p{2.7cm}|p{1.6cm}|p{2cm}|}
+\hline
+\textbf{Servicio} & \textbf{Protocolo} & \textbf{Puerto} \\
+\hline
+Nginx (proxy + estático) & HTTP & TCP/80 \\
+\hline
+alerts-api (Flask, bind 0.0.0.0) & HTTP & TCP/5000 \\
+\hline
+actions-api (Flask, bind 0.0.0.0) & HTTP & TCP/5001 \\
+\hline
+Administración del servidor & SSH & TCP/22 \\
+\hline
+\end{tabular}
+\end{table}
+
+Los puertos 5000/5001 quedan expuestos directamente en la red (bind
+\texttt{0.0.0.0}), no solo tras el proxy --- un hallazgo relevante para el
+modelo de amenazas (Sección \ref{sec:amenazas}).
+
+\subsection{Límites de confianza}
+
+\begin{enumerate}
+    \item \textbf{L1:} frontera entre la red del laboratorio/Internet y Nginx.
+    \item \textbf{L2:} frontera entre Nginx y los microservicios Flask;
+    debilitada porque ambos hacen bind en \texttt{0.0.0.0} y son alcanzables
+    directamente, sin pasar por Nginx.
+    \item \textbf{L3:} frontera entre el navegador y la API consumida por el
+    dashboard --- corregida en esta entrega para que pase por el proxy
+    (same-origin) en vez de saltárselo.
+\end{enumerate}
+
+\subsection{Punto de generación de logs}
+
+Nginx registra en \texttt{lab3\_access.log} la IP de origen, fecha y hora,
+método, ruta, código de respuesta y User-Agent de cada solicitud; los errores
+del servicio quedan en \texttt{lab3\_error.log}. Cada microservicio Flask
+registra en su propio archivo (\texttt{alerts.log}, \texttt{actions.log}) las
+solicitudes y respuestas mediante los manejadores \texttt{before\_request} /
+\texttt{after\_request}.
+
+\subsection{Diagrama de arquitectura y flujo de datos}
+
+La Figura~\ref{fig:arquitectura} presenta la arquitectura implementada,
+identificando actores, componentes, protocolo, puertos, almacenes de datos,
+límites de confianza y puntos de generación de logs.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/dfd-lab3}
+    \caption{Diagrama de Flujo de Datos --- CrowdStrike Falcon Alert Simulator.}
+    \label{fig:arquitectura}
+\end{figure}
+% PENDIENTE: exportar el diagrama (artifact Mermaid) como PNG y subirlo a
+% images/dfd-lab3.png en el proyecto de Overleaf.
+
+% ============================================================================
+% 4. ESTRUCTURA DEL REPOSITORIO
+% ============================================================================
+\section{Estructura del Repositorio}
+
+El repositorio
+\url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI} sigue la
+siguiente estructura:
+
+\begin{lstlisting}
+Lab3-FDSI/
+|-- frontend/index.html
+|-- nginx/lab3-fdsi.conf
+|-- services/
+|   |-- alerts-api/  (app.py, requirements.txt)
+|   `-- actions-api/ (app.py, requirements.txt)
+|-- anexos/diagrams/dfd-lab3.png
+|-- anexos/{local-exec.txt,server-nginx.txt,red/,blue/}
+|-- anexos/zap-passive/
+|-- anexos/risk-register.md
+|-- anexos/threat-model/threat-model.xlsx
+|-- deploy.sh
+`-- README.md
+\end{lstlisting}
+
+El \texttt{README.md} documenta: propósito del proyecto, arquitectura,
+requisitos (Ubuntu 20.04+, Python 3.8+, Nginx, pip3), ejecución local,
+procedimiento de despliegue mediante \texttt{deploy.sh}, la URL publicada
+(\texttt{http://192.168.17.129/}), los integrantes del equipo y las
+limitaciones de seguridad conocidas (sin autenticación, sin TLS,
+\texttt{/debug/env} expuesto, sin validación de entrada, sin rate limiting,
+sin cabeceras de seguridad, datos en memoria, logs sin cifrar). El
+\texttt{anexos/risk-register.md} contiene activos, actores, límites de confianza y
+superficie de ataque; la matriz de hipótesis STRIDE y de mitigaciones vive en
+\texttt{anexos/threat-model/threat-model.xlsx}.
+
+% ============================================================================
+% 5. EVIDENCIAS DE EJECUCIÓN LOCAL
+% ============================================================================
+\section{Evidencias de Ejecución Local}
+
+La ejecución local permite comprobar que el repositorio fue clonado
+correctamente, que los archivos de la aplicación existen y que el frontend
+funciona antes del despliegue en el servidor. El comando exacto usado en cada
+prueba se lista en el Anexo~\ref{app:comandos}.
+
+\subsection{Estado del repositorio}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/git-status}
+    \caption{Estado del repositorio mediante \texttt{git status}.}
+    \label{fig:git_status}
+\end{figure}
+% Salida real de referencia: "On branch main, up to date with origin/main,
+% nothing to commit, working tree clean" (tras subir los commits de esta entrega).
+
+\subsection{Historial de commits}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/git-log}
+    \caption{Últimos cinco commits del repositorio.}
+    \label{fig:git_log}
+\end{figure}
+% NOTA: cada commit posterior a esta captura la vuelve desactualizada (git log
+% siempre muestra los ultimos 5). Retomarla como ULTIMO paso, justo antes de
+% exportar el PDF final, para que coincida con el commit realmente evaluado.
+
+\subsection{Archivos del proyecto}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/find-files}
+    \caption{Archivos presentes en el repositorio.}
+    \label{fig:find_files}
+\end{figure}
+% Debe evidenciar, entre otros: frontend/index.html, nginx/lab3-fdsi.conf,
+% services/alerts-api/app.py, services/actions-api/app.py, anexos/risk-register.md.
+
+\subsection{Servidor HTTP local}
+
+Se sirvió \texttt{frontend/index.html} con \texttt{python3 -m http.server 8080}
+y se verificó con \texttt{curl -I}/\texttt{curl} contra \texttt{localhost:8080}
+(comandos completos en el Anexo~\ref{app:comandos}). Respuesta obtenida:
+
+\begin{lstlisting}
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.14.0
+Date: Mon, 14 Sep 2026 11:18:38 GMT
+Content-type: text/html
+Content-Length: 8294
+\end{lstlisting}
+
+El cuerpo de la respuesta contiene el \texttt{<title>Falcon Alerts</title>} del
+dashboard, confirmando que \texttt{index.html} existe y se sirve correctamente
+de forma local antes del despliegue en el servidor.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/curl-local}
+    \caption{Prueba de disponibilidad del frontend con \texttt{python3 -m http.server 8080} (HTTP 200).}
+    \label{fig:curl_local}
+\end{figure}
+
+\subsection{Fecha y hora de las pruebas}
+
+Obtenida con \texttt{date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ}.
+Evidencia de ejecución local: \texttt{2026-09-14T11:18:38Z}. Evidencia de
+despliegue en servidor: \texttt{2026-09-14T03:48:11Z}.
+
+% ============================================================================
+% 6. EVIDENCIAS DEL SERVIDOR Y NGINX
+% ============================================================================
+\section{Evidencias del Servidor y Nginx}
+\label{sec:evidencia-servidor}
+
+Servidor: VM Ubuntu Server 26.04.1 LTS en VMware Workstation (red NAT), host
+\texttt{lab3-fdsi-ubuntu}, IP \texttt{192.168.17.129}. Los comandos exactos
+usados en esta sección se listan en el Anexo~\ref{app:comandos}.
+
+\subsection{Identificación del servidor}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/server-baseline}
+    \caption{Identificación y línea base del servidor.}
+    \label{fig:server_baseline}
+\end{figure}
+
+\subsection{Versión de Nginx}
+
+Obtenida con \texttt{nginx -v}: \texttt{nginx/1.28.3 (Ubuntu)}.
+
+\subsection{Estado del servicio}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/nginx-status}
+    \caption{Estado del servicio Nginx (\texttt{active/running}).}
+    \label{fig:nginx_status}
+\end{figure}
+
+\subsection{Validación de la configuración}
+
+Resultado de \texttt{sudo nginx -t}:
+\begin{lstlisting}
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+\end{lstlisting}
+
+\subsection{Prueba HTTP local}
+
+Verificada con \texttt{curl -I} sobre el frontend (:80) y el health check de
+cada microservicio (:5000, :5001):
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/curl-nginx}
+    \caption{Respuesta HTTP generada por Nginx (200 OK).}
+    \label{fig:curl_nginx}
+\end{figure}
+Código HTTP obtenido en los tres casos: \texttt{200 OK}.
+
+\subsection{Configuración del servidor}
+
+El virtual host utilizado corresponde a:
+
+\begin{lstlisting}[language=bash]
+server {
+    listen 80;
+    server_name _;
+
+    access_log /var/log/nginx/lab3_access.log;
+    error_log  /var/log/nginx/lab3_error.log;
+
+    root /var/www/lab3;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/alerts/ {
+        proxy_pass http://127.0.0.1:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /api/actions/ {
+        proxy_pass http://127.0.0.1:5001/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+\end{lstlisting}
+
+\subsection{Permisos del directorio publicado}
+
+Resultado de \texttt{ls -la /var/www/lab3}:
+\begin{lstlisting}
+drwxr-xr-x 2 root root 4096 Sep 14 03:41 .
+-rwxr-xr-x 1 root root 9083 Sep 14 03:44 index.html
+\end{lstlisting}
+
+Los archivos son propiedad de \texttt{root} con permisos \texttt{755}/\texttt{755},
+legibles y ejecutables (traversal de directorio) por Nginx sin otorgar permiso
+de escritura al proceso del servidor web.
+
+\subsection{Access log}
+
+Extracto de \texttt{sudo tail -n 50 /var/log/nginx/lab3\_access.log}:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/access-log}
+    \caption{Extracto del registro de acceso de Nginx --- incluye tráfico real
+    del navegador (\texttt{192.168.17.1}) consumiendo \texttt{/api/alerts/alerts}
+    cada 30 segundos, correspondiente al refresco automático del dashboard.}
+    \label{fig:access_log}
+\end{figure}
+
+\subsection{Error log}
+
+Extracto de \texttt{sudo tail -n 30 /var/log/nginx/lab3\_error.log}:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/error-log}
+    \caption{Registro de errores de Nginx (vacío, sin errores registrados).}
+    \label{fig:error_log}
+\end{figure}
+
+\subsection{Captura del navegador}
+
+La Figura~\ref{fig:browser} muestra el dashboard ya simplificado, con las
+cinco alertas y los contadores por severidad correctamente cargados tras la
+corrección del bloqueo por CORS descrita en la Sección~\ref{sec:amenazas}
+(hallazgo L3). Verificación tomada en un entorno local equivalente
+(\texttt{alerts-api}, \texttt{actions-api} y el proxy sirviendo el mismo
+\texttt{frontend/index.html} del repositorio); la evidencia contra la VM
+publicada (\texttt{192.168.17.129}) se actualiza en el próximo redespliegue.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/browser-dashboard}
+    \caption{Dashboard de alertas cargado correctamente, 5 alertas
+    (1 CRITICAL, 2 HIGH, 1 MEDIUM, 1 LOW).}
+    \label{fig:browser}
+\end{figure}
+
+% ============================================================================
+% 7. DIAGNÓSTICO DEL FALLO
+% ============================================================================
+\section{Diagnóstico del Fallo}
+
+El despliegue se completó exitosamente; no obstante, durante el proceso se
+presentaron dos fallos reales, diagnosticados y corregidos, que se documentan
+por su valor metodológico.
+
+\begin{table*}[t]
+\centering
+\caption{Diagnóstico de problemas durante el despliegue}
+\label{tab:diagnostico}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{4.5cm}|>{\raggedright\arraybackslash}p{6.5cm}|}
+\hline
+\textbf{Prueba} &
+\textbf{Esperado} &
+\textbf{Obtenido} &
+\textbf{Diagnóstico} \\
+\hline
+curl localhost & HTTP 200 & HTTP 200 & OK, sin fallo \\
+\hline
+nginx -t & Syntax OK & Syntax OK & OK, sin fallo \\
+\hline
+\texttt{pip3 install} & Instalación OK & \url{externally-managed-environment} & Python 3.14/Ubuntu 26.04 (PEP 668); corregido con \texttt{--break-system-packages} \\
+\hline
+Arranque \url{alerts-api/actions-api} & \texttt{active (running)} & \texttt{status=200/CHDIR} & \texttt{User=www-data} sin permiso sobre \texttt{\$HOME} (750); corregido a usuario dueño del repo \\
+\hline
+Carga del dashboard & Alertas visibles & \texttt{Error conectando a la API} & CORS: fetch cruzado de puerto bloqueado; corregido consumiendo vía proxy Nginx \\
+\hline
+\end{tabular}
+\end{table*}
+
+Los tres últimos casos están documentados en detalle, con evidencia de
+comando/log y corrección aplicada, en \texttt{anexos/risk-register.md} y en las
+secciones anteriores de este informe.
+
+% ============================================================================
+% 8. MODELO DE AMENAZAS INICIAL
+% ============================================================================
+\section{Modelo de Amenazas Inicial}
+\label{sec:amenazas}
+
+El modelo de amenazas permite identificar los activos, actores, límites de
+confianza y posibles riesgos de seguridad existentes en la primera versión
+del sistema. El detalle narrativo se encuentra en \texttt{anexos/risk-register.md};
+la matriz de amenazas STRIDE y de mitigaciones, en
+\texttt{anexos/threat-model/threat-model.xlsx}.
+
+\subsection{Activos}
+
+\begin{itemize}
+    \item Datos de alertas (\texttt{ALERTS}) y de acciones (\texttt{ACTIONS}).
+    \item Código fuente del repositorio.
+    \item Configuración de Nginx y procesos \texttt{alerts-api}/\texttt{actions-api}.
+    \item Registros (\texttt{lab3\_access.log}, \texttt{lab3\_error.log},
+    \texttt{alerts.log}, \texttt{actions.log}).
+    \item El host (VM Ubuntu Server).
+\end{itemize}
+
+\subsection{Actores}
+
+Analista SOC (Blue Team); Red Team / Kali (Parte II); cliente HTTP anónimo (sin
+distinción de privilegio); administrador/Builder con acceso \texttt{sudo}.
+
+\subsection{Límites de confianza}
+
+Ver Sección~\ref{sec:amenazas} de Arquitectura: L1 (Internet/LAN
+$\rightarrow$ Nginx), L2 (Nginx $\rightarrow$ microservicios Flask, debilitado
+por bind \texttt{0.0.0.0}) y L3 (navegador $\rightarrow$ API, corregido en
+esta entrega).
+
+\subsection{Superficie de ataque}
+
+\begin{itemize}
+    \item Puertos TCP 80, 5000 y 5001 expuestos.
+    \item Endpoints enumerables sin autenticación: \texttt{/alerts},
+    \texttt{/alerts/\{id\}}, \texttt{/alerts/severity/\{level\}},
+    \texttt{/actions}, \texttt{/actions/alert/\{id\}}, y el endpoint de
+    diagnóstico \texttt{/debug/env}.
+    \item Ambos microservicios corren con \texttt{debug=True} (Werkzeug).
+    \item Sin \texttt{server\_tokens off}, sin cabeceras de seguridad HTTP.
+\end{itemize}
+
+\subsection{Hipótesis STRIDE}
+
+El detalle de las seis hipótesis STRIDE (una por categoría), derivadas
+directamente del código de \texttt{alerts-api} y \texttt{actions-api}, junto
+con su elemento afectado y las mitigaciones candidatas propuestas para cada
+una, se documenta en la matriz de amenazas y mitigaciones
+\texttt{anexos/threat-model/threat-model.xlsx} (hojas \textit{Threats} y
+\textit{Mitigation Candidates}), incluida en el repositorio del proyecto y
+enlazada en el Anexo~\ref{app:enlaces}.
+Cubren las seis categorías: \textit{Spoofing}, \textit{Tampering},
+\textit{Repudiation}, \textit{Information Disclosure}, \textit{Denial of
+Service} y \textit{Elevation of Privilege}.
+
+\subsection{Relación entre amenazas y arquitectura}
+
+Las seis amenazas se relacionan con la ausencia de autenticación, cifrado y
+validación en los dos microservicios, y con el bind en \texttt{0.0.0.0} que
+extiende la superficie de ataque más allá del proxy de Nginx. Los registros
+del servidor (\texttt{access.log} y los \texttt{.log} de cada microservicio)
+constituyen el principal mecanismo disponible para analizar Repudiation e
+Information Disclosure en la Parte II.
+
+\subsection{Mitigaciones propuestas}
+
+Las mitigaciones candidatas (M-001 a M-006), una por cada hipótesis STRIDE,
+se listan junto con las amenazas que atienden en la hoja \textit{Mitigation
+Candidates} de \texttt{anexos/threat-model/threat-model.xlsx}.
+
+% ============================================================================
+% 10. FASE C --- RECONOCIMIENTO RED TEAM
+% ============================================================================
+\section{Reconocimiento Red Team (Fase C)}
+\label{sec:redteam}
+
+Reconocimiento ejecutado desde una estación Kali Linux (\texttt{192.168.17.130})
+contra la VM publicada, antes de aplicar el hardening de la Fase E. Variables
+de entorno acordadas: \texttt{TARGET\_IP=192.168.17.129},
+\texttt{TARGET\_URL=http://\$TARGET\_IP}.
+
+\subsection{Reconocimiento de puertos (Nmap)}
+
+\begin{lstlisting}[language=bash, caption={nmap -sV sobre 80, 5000 y 5001 (anexos/red/nmap\_ports\_extra.nmap)}]
+PORT     STATE SERVICE VERSION
+80/tcp   open  http    nginx 1.28.3 (Ubuntu)
+5000/tcp open  http    Werkzeug httpd 3.1.8 (Python 3.14.4)
+5001/tcp open  http    Werkzeug httpd 3.1.8 (Python 3.14.4)
+\end{lstlisting}
+
+Nmap detectó, sin explotar nada, que detrás de Nginx corren dos servidores de
+desarrollo Flask/Werkzeug directamente alcanzables, con la versión exacta de
+Python --- confirmación empírica del hallazgo de arquitectura L2 (bind en
+\texttt{0.0.0.0}).
+
+\subsection{Reconocimiento HTTP (curl)}
+
+\texttt{curl -i} contra la página de inicio devolvió el HTML completo del
+dashboard, el cual \textbf{documenta por sí mismo} todos los endpoints de
+ambas APIs, incluyendo \texttt{/debug/env} marcado como vulnerabilidad
+intencional. \texttt{curl -s} contra \texttt{/api/alerts/alerts} devolvió el
+cuerpo JSON completo de las 5 alertas sin autenticación
+(\texttt{anexos/red/curl\_alerts\_body.json}).
+
+\subsection{Inspección pasiva con OWASP ZAP}
+
+Se usó \textit{Manual Explore} contra \texttt{http://192.168.17.129/}
+navegando el dashboard real, sin ejecutar Active Scan. Alertas pasivas
+obtenidas (\texttt{anexos/zap-passive/zap-report.html}):
+
+\begin{itemize}
+    \item Content Security Policy (CSP) Header Not Set.
+    \item Missing Anti-clickjacking Header (\texttt{X-Frame-Options}).
+    \item \texttt{X-Content-Type-Options} Header Missing.
+    \item Server Leaks Version Information via \texttt{Server} Header.
+\end{itemize}
+
+\subsection{Captura de tráfico}
+
+Blue Team inició \texttt{tcpdump} en el servidor durante 60 segundos mientras
+Red Team generaba tráfico desde Kali. El PCAP resultante
+(\texttt{anexos/blue/lab3-http.pcap}, 104 paquetes) muestra las solicitudes
+y respuestas HTTP completas en texto claro, confirmando H1/H2 del modelo de
+amenazas (Information Disclosure por falta de TLS).
+
+% ============================================================================
+% 11. FASE D --- DETECCIÓN BLUE TEAM
+% ============================================================================
+\section{Detección Blue Team (Fase D)}
+\label{sec:blueteam}
+
+\subsection{Regla de detección}
+
+\textbf{Regla:} una misma IP produce 5 o más respuestas HTTP 404 en una
+ventana de 5 minutos en \texttt{lab3\_access.log}. Implementada en
+\texttt{anexos/blue/detect\_404.py} (ventana deslizante por IP, sin
+dependencias externas).
+
+\begin{lstlisting}[caption={Validación contra el log real (anexos/blue/detection\_rule\_result.txt)}]
+ALERTA 2026-09-24T03:52:25+00:00 ip=192.168.17.130
+       404s_en_5min=5 rutas=['/api/alerts/no-existe']
+\end{lstlisting}
+
+Se validó con tres casos: positivo (6 solicitudes 404 reales generan la
+alerta en el quinto evento, no en el sexto), negativo (el mismo log sin esas
+líneas no alerta) y de umbral (4 líneas 404 no alertan). Limitaciones
+documentadas en \texttt{anexos/blue/detection-rule.md}: solo ve tráfico que
+pasa por Nginx (el reconocimiento contra 5000/5001 no dejó rastro aquí),
+no detecta un SYN scan puro, se evade bajando la frecuencia o rotando IP, y
+solo mira el código 404 (no detecta enumeración exitosa de rutas con 200).
+
+\subsection{Correlación con Red Team}
+
+Cruzando \texttt{access.log} con los comandos de la Fase C: las sondas de
+fingerprinting propias de \texttt{nmap -sV} (\texttt{GET
+/nmaplowercheck...}, \texttt{POST /sdk}) sí quedaron registradas, porque
+\texttt{-sV} completa el handshake TCP y envía peticiones HTTP reales; un
+hipotético SYN scan (\texttt{-sS}) no las habría generado. El reconocimiento
+contra 5000/5001 no aparece en \texttt{access.log} porque esos puertos no
+pasaban por el proxy.
+
+% ============================================================================
+% 12. LÍNEA DE TIEMPO PURPLE TEAM
+% ============================================================================
+\section{Línea de Tiempo Purple Team}
+\label{sec:purpleteam}
+
+La Tabla~\ref{tab:purple} correlaciona cada acción Red Team con su evidencia
+Blue Team, con horas reales en UTC (detalle completo en
+\texttt{anexos/purple-team-timeline.md}).
+
+\clearpage
+\begin{table*}[p]
+\centering
+\caption{Línea de tiempo Purple Team (horas UTC, 2026-09-24)}
+\label{tab:purple}
+\tiny
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|p{1.3cm}|p{3.8cm}|p{4.8cm}|p{4.8cm}|}
+\hline
+\textbf{Hora} & \textbf{Acción Red Team} & \textbf{Evidencia Blue Team} & \textbf{Conclusión} \\
+\hline
+02:58:31 & Nmap \texttt{-sV} puerto 80 & \texttt{access.log}: sondas NSE de fingerprinting & \texttt{-sV} completa el handshake y manda sondas HTTP reales, por eso aparece en el log \\
+\hline
+02:59--03:00 & Nmap \texttt{-sV} puertos 80/5000/5001 & Sondas NSE repetidas; fingerprint de Werkzeug solo en la salida de Nmap & 5000/5001 no pasan por Nginx: Blue Team no ve nada de ese reconocimiento en \texttt{access.log} \\
+\hline
+03:04:40 & \texttt{curl -i /} & \texttt{access.log}: \texttt{GET / 200} & Correlación exacta confirmada \\
+\hline
+03:05:06 & \texttt{curl -I .../alerts} & \texttt{access.log}: \texttt{HEAD /api/alerts/alerts 200} & \texttt{curl -I} genera HEAD, no GET \\
+\hline
+03:05:33 & \texttt{curl -s .../alerts} & \texttt{access.log}: \texttt{GET ... 200 1711} & Cuerpo JSON completo sin autenticación \\
+\hline
+03:26--03:34 & ZAP Manual Explore (pasivo) & \texttt{zap-report.html}: CSP/X-Frame-Options/X-Content-Type-Options ausentes & Confirma H4 (Information Disclosure) sin Active Scan \\
+\hline
+03:52:02--32 & \texttt{curl} durante la ventana de \texttt{tcpdump} & \texttt{lab3-http.pcap} (104 paquetes) + \texttt{access.log} & Tráfico HTTP en texto claro --- confirma H1/H2 \\
+\hline
+03:52:25 & 6$\times$ \texttt{curl} a ruta inexistente de API & \texttt{detection\_404.txt}: 6 respuestas 404 agrupadas en el mismo segundo & Regla de detección validada con datos reales \\
+\hline
+03:54:53 & \textit{(Blue Team)} aplica hardening y recarga Nginx & \texttt{journalctl}: evento de reload registrado & Corrección verificable en el log del propio sistema \\
+\hline
+03:55:03 & Retest parcial (solo Nginx): headers, ruta oculta & Headers presentes; \texttt{/.git/config} $\to$ 403 & Hardening de Nginx verificado \\
+\hline
+04:02:42 & \textit{(Builder)} redespliega con fix de Flask + UFW & \texttt{deploy.sh}: 3 servicios activos, UFW activo & Corrección de código y de red aplicadas juntas \\
+\hline
+04:03 & Retest final: Nmap 80/5000/5001, \texttt{curl} a \texttt{/debug/env} & 5000/5001 \texttt{filtered}; \texttt{/debug/env} $\to$ sin respuesta & Superficie reducida de 3 puertos a 1, sin romper el dashboard \\
+\hline
+\end{tabular}
+\end{table*}
+
+% ============================================================================
+% 13. FASE E --- CORRECCIÓN (HARDENING)
+% ============================================================================
+\section{Corrección --- Hardening (Fase E)}
+\label{sec:hardening}
+
+\subsection{Hardening de Nginx}
+
+Se agregó al bloque \texttt{server}: \texttt{server\_tokens off},
+\texttt{X-Content-Type-Options: nosniff}, \texttt{X-Frame-Options: DENY},
+\texttt{Referrer-Policy: no-referrer}, \texttt{autoindex off}, y una regla
+\texttt{deny all} para rutas ocultas (cualquier ruta que empiece por un
+punto, como \texttt{.git}).
+
+\subsection{Corrección del código Flask}
+
+Ambos microservicios pasaron de \texttt{app.run(host='0.0.0.0', debug=True)}
+a \texttt{app.run(host='127.0.0.1', debug=False)}, y se eliminó el endpoint
+\texttt{/debug/env}. Esto cierra directamente el hallazgo de arquitectura L2:
+los microservicios dejan de ser alcanzables sin pasar por el proxy.
+
+\subsection{Firewall UFW}
+
+\begin{lstlisting}[language=bash]
+sudo LAB_CIDR=192.168.17.0/24 ./deploy.sh
+\end{lstlisting}
+
+Resultado: \texttt{80/tcp ALLOW IN 192.168.17.0/24}, \texttt{OpenSSH ALLOW IN
+Anywhere}, política por defecto \texttt{deny incoming}.
+
+\subsection{Verificación de \texttt{source\_ip} (T05 / M-009)}
+
+Se corrigió \texttt{actions-api} para registrar la IP real del cliente
+(\texttt{X-Real-IP}, inyectada por Nginx) como \texttt{source\_ip} en cada
+acción, en vez de \texttt{remote\_addr} (que detrás del proxy siempre
+mostraría \texttt{127.0.0.1}). Verificado en la VM el 2026-10-16 con un
+\texttt{POST} real desde Kali:
+
+\begin{lstlisting}[caption={Respuesta de /api/actions/actions (source\_ip\_vm.md)}]
+{"action":"investigate","alert_id":"ALT-002",
+ "analyst":"carlos.garcia","id":"ACT-004",
+ "source_ip":"192.168.17.130",
+ "timestamp":"2026-10-16T01:15:40.358935Z"}
+\end{lstlisting}
+
+La misma IP y el mismo timestamp aparecen correlacionados en
+\texttt{access.log} de Nginx y en \texttt{actions.log} de Flask
+(\texttt{source\_ip\_vm.md}), confirmando que \texttt{X-Real-IP} se propaga
+correctamente. T05 pasa de ``mitigado parcialmente'' a \textbf{mitigado y
+verificado en la VM}; sigue sin resolver la falta de sesión autenticada que
+ligue la acción a una identidad real, pendiente para el Laboratorio 4.
+
+% ============================================================================
+% 14. FASE F --- VERIFICACIÓN (RETEST)
+% ============================================================================
+\section{Verificación --- Retest (Fase F)}
+\label{sec:retest}
+
+\begin{table}[H]
+\centering
+\caption{Comparación antes / después del hardening completo}
+\label{tab:retest-final}
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{2.2cm}|p{2.1cm}|p{2.1cm}|}
+\hline
+\textbf{Elemento} & \textbf{Antes} & \textbf{Después} \\
+\hline
+Puerto 80 & \texttt{nginx 1.28.3 (Ubuntu)} & \texttt{nginx} (sin versión) \\
+\hline
+Puerto 5000 & \texttt{open}, Werkzeug/Python & \texttt{filtered} \\
+\hline
+Puerto 5001 & \texttt{open}, Werkzeug/Python & \texttt{filtered} \\
+\hline
+\texttt{/debug/env} directo & \texttt{200}, expone entorno & Sin respuesta (\texttt{000}) \\
+\hline
+Dashboard \texttt{/} & \texttt{200} & \texttt{200} (sin regresión) \\
+\hline
+API vía proxy & \texttt{200} & \texttt{200} (sin regresión) \\
+\hline
+Headers de seguridad & Ausentes & Presentes (3) \\
+\hline
+\texttt{/.git/config} & Habría dado \texttt{200} & \texttt{403 Forbidden} \\
+\hline
+CSP & Ausente & Sigue ausente (pendiente) \\
+\hline
+\end{tabular}
+\end{table}
+
+La superficie de ataque expuesta a la red pasó de 3 puertos con huella de
+versión completa a 1 puerto sin versión, sin afectar la funcionalidad
+legítima. Detalle completo en \url{anexos/retest/comparacion-antes-despues.md}.
+
+\subsection{Estado final de las amenazas}
+
+Según \texttt{anexos/risk-register.md} y \texttt{anexos/threat-model/threat-model.xlsx}
+(hoja \textit{Threats}):
+
+\begin{itemize}
+    \item \textbf{Corregido:} T06 (\texttt{/debug/env} eliminado,
+    \texttt{server\_tokens off}), T09 (5000/5001 filtrados, loopback), T10
+    (\texttt{debug=False}).
+    \item \textbf{Mitigado y verificado:} T05 (\texttt{source\_ip} vía
+    \texttt{X-Real-IP}, verificado en la VM el 2026-10-16).
+    \item \textbf{Pendiente para Lab 4:} T01 (HTTP en texto claro, PCAP como
+    evidencia), T02, T03, T04 y T08 (sin identidad, autenticación ni
+    autorización).
+    \item \textbf{Pendiente para Lab 4/5:} T07 (servidor de desarrollo, sin
+    límite de tasa).
+    \item \textbf{Aceptado en el Lab 3:} ausencia de HTTPS y autenticación,
+    reservadas explícitamente al Lab 4.
+    \item \textbf{Pendiente:} Content-Security-Policy.
+\end{itemize}
+
+% ============================================================================
+% 15. PREGUNTAS DE ANÁLISIS
+% ============================================================================
+\section{Preguntas de Análisis}
+\label{sec:preguntas}
+
+Respuestas completas, con referencias a la evidencia exacta, en
+\texttt{anexos/preguntas-de-analisis.md}. Resumen:
+
+\begin{enumerate}
+    \item \textbf{¿Qué observó Red Team sin explotar nada?} Puertos y
+    versiones (Nmap), headers (\texttt{curl -I}), el cuerpo JSON completo de
+    las alertas, y en ZAP pasivo la ausencia de CSP/X-Frame-Options/X-Content-Type-Options.
+    \item \textbf{¿Qué no apareció en \texttt{access.log} y por qué?} El
+    reconocimiento de 5000/5001 (no pasa por Nginx) y, en teoría, un SYN scan
+    puro (no completa el handshake de aplicación).
+    \item \textbf{¿Qué control reduce exposición pero no resuelve HTTP?}
+    \texttt{server\_tokens off}, los headers, el bind a loopback y UFW
+    reducen el fingerprint, pero el tráfico por el puerto 80 sigue sin
+    cifrar.
+    \item \textbf{¿Qué le faltaría a Blue Team para distinguir curl legítimo
+    de actividad sospechosa?} Identidad autenticada, inventario de IPs
+    autorizadas, línea base de tráfico normal, y correlación de
+    \texttt{X-Real-IP} con los logs de cada microservicio.
+    \item \textbf{¿Qué amenaza STRIDE priorizar en Lab 4?} Spoofing
+    (T02/T03) junto con Elevation of Privilege (T08), acompañada de TLS
+    (T01/T04).
+    \item \textbf{¿Qué conclusión de la IA no pudo comprobarse
+    directamente?} Ver Sección~\ref{sec:ia}.
+\end{enumerate}
+
+% ============================================================================
+% 16. USO RESPONSABLE DE IA
+% ============================================================================
+\section{Uso Responsable de IA}
+\label{sec:ia}
+
+Se usó Claude Code como copiloto de apoyo para redactar y organizar
+documentación, preparar el script de la regla de detección, generar el DFD
+de la arquitectura fortalecida, y --- con autorización explícita del equipo
+--- ejecutar directamente contra la VM del laboratorio comandos de
+reconocimiento (Nmap, curl), despliegue, hardening y retest, siempre
+verificados contra la salida real del servidor o del repositorio. Cada
+afirmación técnica de este informe se contrastó con un comando, un log o un
+archivo real; no se compartieron contraseñas, tokens, llaves ni PCAP
+completos con la IA. Detalle en \texttt{anexos/uso-de-ia.md}.
+
+Ejemplo concreto de una hipótesis de la IA que no se pudo comprobar
+directamente: ante un error de conexión SSH (\texttt{Permission denied} en
+el \texttt{connect}), la IA propuso como causa los servicios de red de
+VMware atascados y sugirió reiniciarlos --- hipótesis plausible que nunca se
+validó, porque la causa real (una VPN activa interceptando las rutas) se
+descubrió por otro medio y se repitió, con el mismo diagnóstico correcto,
+en una sesión posterior.
+
+% ============================================================================
+% 17. REFLEXIÓN INDIVIDUAL
+% ============================================================================
+\section*{Reflexión Individual}
+\label{sec:reflexion}
+
+\subsection*{Brayan Loaiza Leal}
+% TODO (Brayan): máximo 250 palabras, en primera persona. Sugerencia de
+% puntos a cubrir -- personalizar antes de entregar:
+% - Montar la VM de Kali y resolver el problema de red (VPN interceptando
+%   las rutas de VMware) como parte del aprendizaje práctico de redes.
+% - Encontrar en vivo el bug de CORS entre el dashboard y la API, y cómo
+%   un error que "no se ve" en curl sí se ve en el navegador.
+% - Coordinar con Juan sobre trabajo hecho en paralelo sin perder nada de
+%   ninguno de los dos (reconciliar historiales de Git).
+% - Qué le pareció más revelador del modelo de amenazas STRIDE aplicado a
+%   código real en vez de un ejemplo genérico.
+
+\subsection*{Juan Sebastián Guayazán Clavijo}
+% TODO (Juan): máximo 250 palabras, en primera persona.
+
+% ============================================================================
+% 9. CONCLUSIONES
+% ============================================================================
+\section{Conclusiones}
+
+\begin{itemize}
+
+    \item Se construyó y desplegó exitosamente el prototipo CrowdStrike Falcon
+    Alert Simulator (dos microservicios Flask + Nginx) sobre una VM Ubuntu
+    Server 26.04.1 LTS, usando únicamente información ficticia.
+
+    \item El análisis STRIDE, basado en el código real de los microservicios,
+    identificó un hallazgo de arquitectura no evidente a simple vista: el
+    bind en \texttt{0.0.0.0} de ambos servicios Flask y la llamada directa
+    del frontend a la API rompían el límite de confianza L2/L3 asumido en el
+    diseño original; este último se corrigió y se verificó con retest.
+
+    \item El proceso de despliegue reveló dos fallos reales (PEP 668 en
+    pip3, y permisos de \texttt{systemd} sobre \texttt{\$HOME}) que fueron
+    diagnosticados y corregidos con evidencia reproducible, aportando valor
+    más allá de un despliegue "que simplemente funcionó a la primera".
+
+    \item La ejecución local y las pruebas sobre Nginx permiten establecer una
+    línea base técnica del servicio antes de las actividades controladas de
+    Red Team y Blue Team de la Parte II.
+
+    \item Esta primera versión constituye una línea base deliberadamente
+    insegura y controlada. Las correcciones de hardening reducen exposición
+    pero no resuelven el riesgo de fondo de HTTP sin cifrado ni autenticación,
+    que queda explícitamente abierto para el Laboratorio 4.
+
+    \item El ciclo completo Atacar $\rightarrow$ Detectar $\rightarrow$
+    Corregir $\rightarrow$ Verificar (Parte II) confirmó en la práctica tres
+    de las seis hipótesis STRIDE (Information Disclosure, Repudiation vía
+    \texttt{source\_ip}) y redujo la superficie de ataque expuesta a la red
+    de 3 puertos con huella de versión completa a 1 puerto sin versión, sin
+    romper el dashboard ni las APIs.
+
+    \item La regla de detección de 404s, validada con casos positivos,
+    negativos y de umbral contra el log real, demuestra tanto su utilidad
+    como sus límites: no ve tráfico que evita Nginx, no detecta un SYN scan
+    puro, y se evade bajando la frecuencia o rotando la IP de origen ---
+    limitaciones que deben guiar el diseño de detección del Laboratorio 4.
+
+    \item Spoofing (T02/T03) y Elevation of Privilege (T08), acompañados de
+    TLS (T01/T04), quedan como la prioridad técnica para la siguiente
+    entrega: hoy cualquier cliente anónimo puede suplantar a un analista o
+    escalar/cerrar una alerta crítica sin ninguna verificación de identidad.
+
+\end{itemize}
+
+% ============================================================================
+% REFERENCIAS
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{lab3}
+Escuela Colombiana de Ingeniería Julio Garavito,
+``Laboratorio 3 --- Red Team + Blue Team: Aplicación web pública por HTTP:
+construir, atacar, detectar, corregir y verificar,''
+Fundamentos de Seguridad de la Información, 2026.
+
+\bibitem{crowdstrike-api}
+CrowdStrike,
+``Alerts API Reference,''
+CrowdStrike Developer Portal, 2024.
+\url{https://developer.crowdstrike.com/api-reference/collections/alerts/}
+
+\bibitem{flask-docs}
+Pallets Projects,
+``Flask Documentation,'' 2024.
+\url{https://flask.palletsprojects.com/}
+
+\bibitem{owasp-zap}
+OWASP Foundation,
+``OWASP ZAP,''
+OWASP.
+\url{https://www.zaproxy.org/}
+
+\bibitem{owasp-wstg}
+OWASP Foundation,
+``Web Security Testing Guide,''
+OWASP.
+\url{https://owasp.org/www-project-web-security-testing-guide/}
+
+\bibitem{nginx}
+F5 Networks,
+``NGINX Documentation,''
+NGINX.
+\url{https://nginx.org/en/docs/}
+
+\bibitem{nmap}
+G. Lyon,
+``Nmap Network Scanning,''
+Nmap.
+\url{https://nmap.org/}
+
+\end{thebibliography}
+
+% ============================================================================
+% APÉNDICE
+% ============================================================================
+\appendices
+
+\section{Enlaces}
+\label{app:enlaces}
+
+\begin{itemize}
+    \item \textbf{Repositorio:}
+    \url{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI}
+    \item \textbf{Matriz de amenazas y mitigaciones (Excel):}
+    \url{https://pruebacorreoescuelaingeduco-my.sharepoint.com/:x:/g/personal/juan_guayazan-c_mail_escuelaing_edu_co/IQCsLx8MX5sySIz1uJj1FwUkAQMTC_xtYA3lVGlnFN1Ojvc?e=U0kC20}
+    (también versionado en el repositorio, en
+    \texttt{anexos/threat-model/threat-model.xlsx})
+\end{itemize}
+
+\section{Lista de Evidencias}
+
+\begin{lstlisting}
+anexos/
+|-- local-exec.txt          (git status, git log, find)
+`-- server-nginx.txt        (hostnamectl, nginx, curl, logs)
+
+images/  (para Overleaf)
+|-- dfd-lab3.png
+|-- git-status.png
+|-- git-log.png
+|-- find-files.png
+|-- curl-local.png
+|-- server-baseline.png
+|-- nginx-status.png
+|-- curl-nginx.png
+|-- access-log.png
+|-- error-log.png
+`-- browser-dashboard.png
+\end{lstlisting}
+
+\section{Comandos de Verificación}
+\label{app:comandos}
+
+\begin{lstlisting}[language=bash]
+# Repositorio (local)
+git status
+git log --oneline -5
+find . -maxdepth 3 -type f
+date -u +%Y-%m-%dT%H:%M:%SZ
+
+# Servidor HTTP local (frontend, antes del despliegue)
+cd frontend
+python3 -m http.server 8080
+curl -I http://localhost:8080
+curl http://localhost:8080
+
+# Servidor
+hostname
+whoami
+pwd
+nginx -v
+systemctl status nginx --no-pager
+sudo nginx -t
+curl -I http://localhost
+curl -I http://localhost:5000/health
+curl -I http://localhost:5001/health
+
+# Permisos
+ls -la /var/www/lab3
+
+# Logs
+sudo tail -n 50 /var/log/nginx/lab3_access.log
+sudo tail -n 30 /var/log/nginx/lab3_error.log
+\end{lstlisting}
+
+\section{Observación sobre las Evidencias}
+
+Las capturas y resultados incluidos en este documento corresponden
+exclusivamente a pruebas realizadas durante el laboratorio (VM
+\texttt{lab3-fdsi-ubuntu}, IP \texttt{192.168.17.129}, 2026-09-14). No se
+inventaron direcciones IP, códigos HTTP, timestamps, resultados de comandos,
+logs ni configuraciones. La IP utilizada corresponde a una red NAT interna de
+laboratorio (VMware), no a una IP pública de Internet.
+
+\end{document}

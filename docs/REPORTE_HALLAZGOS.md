@@ -3,7 +3,7 @@
 **Proyecto:** CrowdStrike Falcon Alert Simulator (base del Lab 3, reutilizada en el Lab 5)  
 **Integrantes:** Brayan Loaiza Leal, Juan Sebastián Guayazán Clavijo  
 **Repositorio / commit:** `BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI`. Línea base `6440081` (rama `chore/estructura-minima`). Remediación en la rama `security/lab-fsi`.  
-**Entorno autorizado:** staging local en Docker (Nginx + las dos APIs Flask, datos ficticios, solo `127.0.0.1`). Es la alternativa local que permite la guía cuando no hay staging HTTPS. Definición en [`evidence/lab5/staging-local/`](../evidence/lab5/staging-local/).  
+**Entorno autorizado:** staging local en Docker (Nginx + las dos APIs Flask, datos ficticios, solo `127.0.0.1`). Es la alternativa local que permite la guía cuando no hay staging HTTPS. Definición en [`report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/staging-local/`](../report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/staging-local/).  
 **Fecha:** 2026-11-10
 
 ## Resumen ejecutivo
@@ -32,7 +32,7 @@ El Log Injection (CWE-117) se corrigió en la Parte 1 (ver F-15).
 | Header `Server` en las APIs | `Werkzeug/3.1.9 Python/3.12.16`, `FalconSim/1.0` | `api` |
 | Pruebas de regresión | 31 fallan, 13 pasan | 44 pasan |
 
-Evidencia: [`evidence/lab5/antes/`](../evidence/lab5/antes/) y [`evidence/lab5/despues/`](../evidence/lab5/despues/).
+Evidencia: [`report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/antes/`](../report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/antes/) y [`report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/despues/`](../report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/despues/).
 
 ## Metodología
 
@@ -57,7 +57,7 @@ La severidad es la asignada por el equipo según impacto real. Semgrep reporta `
 | F-14 | Modo debug de Flask | Lista de la tarea | CWE-489 | n/a | Ya estaba corregido | Prueba de regresión | `0efcada` |
 | F-15 | Log Injection en las 2 APIs | Revisión manual | CWE-117 | Media | Verdadero | **Corregido** | `326e488` |
 | F-16 | `proxy_set_header Host $host` en config viva (2) | Semgrep | CWE-290 | Baja | Verdadero, bajo impacto | **Corregido** | `ca6fa69` |
-| **F-17** | Los mismos `Host $host` en `evidence/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
+| **F-17** | Los mismos `Host $host` en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/` (4) | Semgrep | CWE-290 | n/a | **Falsa alarma** | Excluido del escaneo | `13226ba` |
 | **F-18** | Credencial en script de validación | Gitleaks | CWE-798 | n/a | **Falsa alarma** | Documentado | n/a |
 
 Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: F-09, F-11, F-02 (Parte 2) y F-15 (Parte 1 — Log Injection). ✅ Meta alcanzada.
@@ -69,7 +69,7 @@ Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: 
 - **Severidad y justificación:** Alta. Es explotable por cualquier cliente con acceso de red, sin requisitos previos, y permite cerrar o escalar alertas suplantando a un analista.
 - **Evidencia minimizada:** `POST /api/actions/actions` sin credencial devolvía `201`; `GET /api/alerts/alerts` devolvía `200`.
 - **Impacto:** confidencialidad (lectura de alertas) e integridad (creación de alertas y acciones falsas).
-- **Pasos de validación segura:** ejecutar [`evidence/lab5/validacion-manual.sh`](../evidence/lab5/validacion-manual.sh) contra el staging local.
+- **Pasos de validación segura:** ejecutar [`report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/validacion-manual.sh`](../report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/validacion-manual.sh) contra el staging local.
 - **Corrección:** `edffa29`. Todas las rutas excepto `/health` exigen el header `X-API-Key`, comparado en tiempo constante con `LAB_API_KEY`. Si la variable no está configurada, se rechaza todo. `deploy.sh` genera la clave una sola vez en `/etc/lab3-fdsi.env` (permisos 0600).
 - **Resultado del reescaneo:** las mismas peticiones devuelven `401`; con la clave válida, `200`; `/health` sigue en `200`.
 
@@ -87,12 +87,12 @@ Meta de remediación: **2 High** (F-03, F-01) cumplida. **4 Medium** completas: 
 ## Hallazgo F-17 (falsa alarma)
 
 - **Título:** `request-host-used` reportado en archivos de evidencia.
-- **Análisis:** 4 de los 6 resultados de esta regla están en `evidence/blue/nginx-config-before.conf` y `evidence/server-nginx.txt`, copias históricas del Lab 3 que no se despliegan.
+- **Análisis:** 4 de los 6 resultados de esta regla están en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/nginx-config-before.conf` y `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/server-nginx.txt`, copias históricas del Lab 3 que no se despliegan.
 - **Decisión:** no se editan porque son evidencia. Se excluyen del escaneo con `.semgrepignore`. Los 2 resultados de la configuración viva se registraron como F-16. La corrección posterior reemplazó `$host` por `$proxy_host` en las dos directivas activas; el commit `ca6fa69` corrigió F-16 y el reescaneo de Semgrep quedó en 0.
 
 ## Hallazgo F-18 (falsa alarma)
 
-- **Título:** Gitleaks `curl-auth-header` en `evidence/lab5/validacion-manual.sh:7`.
+- **Título:** Gitleaks `curl-auth-header` en `report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/validacion-manual.sh:7`.
 - **Análisis:** el valor detectado es `clave-incorrecta`, la credencial inválida a propósito con la que el script comprueba que el API responde `401`. No da acceso a nada.
 - **Decisión:** se mantiene y se documenta. El job de Gitleaks termina en verde aunque haya resultados (`|| true`), por lo que hay que revisar el artefacto.
 
