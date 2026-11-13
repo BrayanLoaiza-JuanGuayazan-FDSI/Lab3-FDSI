@@ -1,0 +1,324 @@
+\documentclass[journal]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+
+\hyphenation{op-tical net-works semi-}
+
+\begin{document}
+
+\title{Bit\'acora de Ghidra: CODEBREAKERS\\
+\large El misterio del c\'odigo oculto: paso a paso del an\'alisis}
+
+\author{Brayan~Loaiza~Leal,~\IEEEmembership{Student,~ECI-ISIS}%
+\thanks{Fundamentos de Seguridad Inform\'atica (FDSI), Escuela Colombiana de
+Ingenier\'ia Julio Garavito, 2026. Documento para el monitor: contiene la clave
+del reto; no publicarlo antes de que los compa\~neros lo intenten.}}
+
+\markboth{FDSI -- CODEBREAKERS -- Bit\'acora de Ghidra}%
+{Loaiza Leal: Bit\'acora de Ghidra CODEBREAKERS}
+
+\maketitle
+
+\begin{abstract}
+Este documento registra, en el orden en que se hizo, c\'omo se analiz\'o en Ghidra
+el programa del reto CODEBREAKERS hasta encontrar la clave y obtener la FLAG, sin
+acceso al c\'odigo fuente. Se parte de una ejecuci\'on con una clave falsa, se
+importa el binario en Ghidra, se localizan las cadenas del programa y se sigue la
+referencia al mensaje de acceso hasta \texttt{main}. All\'i se identifica un
+descifrado AES-256-CBC cuya clave e IV est\'an en texto plano dentro del
+ejecutable; se reproduce el descifrado con OpenSSL y se comprueba la clave
+obtenida ejecutando el programa.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Ghidra, ingenier\'ia inversa, CTF, AES-256-CBC, an\'alisis est\'atico.
+\end{IEEEkeywords}
+
+\IEEEpeerreviewmaketitle
+
+\section{Datos generales}
+
+\begin{itemize}
+  \item \textbf{Fecha:} 2026-11-11.
+  \item \textbf{Herramienta:} Ghidra 12.1.4 (release oficial de la NSA) sobre
+        JDK 26, en Windows 11. Proyecto \texttt{ECI\_\allowbreak{}CODEBREAKERS}.
+  \item \textbf{Apoyo:} WSL2 Ubuntu 24.04 para ejecutar el programa y OpenSSL
+        para reproducir el descifrado.
+  \item \textbf{Binario:} \texttt{reto\_\allowbreak{}codebreakers\_\allowbreak{}linux\_\allowbreak{}x64}, ELF 64-bit PIE,
+        x86-64, din\'amico, \textit{not stripped}.
+  \item \textbf{SHA-256:}
+\end{itemize}
+{\scriptsize\begin{verbatim}
+8676a8798847da67b0449092e4341eaaf21a995a37d7
+aea916485b1503dc717f
+\end{verbatim}}
+\begin{itemize}
+  \item \textbf{Resultado:} la clave \texttt{BREAKER\#2026} produce
+        \texttt{ACCESO CONCEDIDO} y \texttt{FLAG\{CODEBREAKERS\_\allowbreak{}ECI\}}.
+\end{itemize}
+
+\subsection{Flujo general}
+
+{\scriptsize\begin{verbatim}
+Ejecutar (clave falsa)
+ -> Importar en Ghidra -> Auto Analyze
+ -> Search for Strings
+ -> "ACCESO CONCEDIDO" -> References
+ -> main -> Decompiler:
+    strcmp(entrada, descifrado)
+ -> que es "descifrado"?
+    sbox / rsbox / add_round_key
+    => AES-256-CBC
+ -> clave e IV en 0x102300 y 0x102320,
+    cifrado en aes_ct
+ -> descifrar con OpenSSL
+ -> BREAKER#2026 -> ejecutar -> FLAG
+\end{verbatim}}
+
+\section{Paso 0. Primer intento sin an\'alisis}
+
+Antes de abrir Ghidra se ejecut\'o el programa en WSL con una palabra cualquiera
+para conocer su comportamiento:
+
+{\scriptsize\begin{verbatim}
+$ chmod +x reto_codebreakers_linux_x64
+$ ./reto_codebreakers_linux_x64
+=== CODEBREAKERS: BOVEDA DIGITAL ECI ===
+Desafio: descubre la clave sin recibir
+el codigo fuente.
+Introduce la clave: prueba
+ACCESO DENEGADO
+\end{verbatim}}
+
+\noindent\textbf{Observaci\'on:} el programa pide la clave por la entrada est\'andar
+(no como argumento) y responde \texttt{ACCESO DENEGADO}. El objetivo es encontrar
+qu\'e texto hace que responda lo contrario.
+
+\section{Paso 1. Crear el proyecto e importar}
+
+\begin{table}[H]
+\centering
+\caption{Creaci\'on del proyecto e importaci\'on del binario.}
+\footnotesize
+\begin{tabular}{@{}l p{1.35in} p{1.45in}@{}}
+\hline
+\# & Acci\'on & Resultado \\ \hline
+1.1 & Abrir \texttt{ghidraRun.bat} desde la carpeta de Ghidra & Ghidra 12.1.4 arranca con JDK 26. \\
+1.2 & File $\rightarrow$ New Project $\rightarrow$ Non-Shared Project, nombre \texttt{ECI\_\allowbreak{}CODEBREAKERS} & Proyecto local, sin servidor. \\
+1.3 & File $\rightarrow$ Import File\ldots{} $\rightarrow$ \texttt{reto\_\allowbreak{}codebreakers\_\allowbreak{}linux\_\allowbreak{}x64} & Formato ELF, lenguaje \texttt{x86:LE:64:default}, compilador gcc. Base de imagen \texttt{0x100000}. \\
+1.4 & Doble clic en el programa $\rightarrow$ Analyze now? $\rightarrow$ Yes, opciones por defecto & An\'alisis autom\'atico de funciones, cadenas, referencias y decompilaci\'on. \\ \hline
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Observaci\'on:} el binario no est\'a \textit{stripped}. En
+Symbol Tree $\rightarrow$ Functions aparecen nombres \'utiles: \texttt{main}
+(\texttt{0x1010c0}) y \texttt{add\_\allowbreak{}round\_\allowbreak{}key} (\texttt{0x101ba0}), y en los datos
+\texttt{sbox}, \texttt{rsbox} y \texttt{aes\_\allowbreak{}ct}.
+
+\section{Paso 2. Buscar cadenas}
+
+\begin{table}[H]
+\centering
+\caption{B\'usqueda de cadenas.}
+\footnotesize
+\begin{tabular}{@{}l p{1.1in} p{1.7in}@{}}
+\hline
+\# & Acci\'on & Resultado \\ \hline
+2.1 & Search $\rightarrow$ For Strings\ldots{}, opciones por defecto & Lista de todas las cadenas del binario. \\
+2.2 & Revisar los mensajes del programa & \texttt{ACCESO CONCEDIDO} (\texttt{0x1020a2}), \texttt{FLAG\{CODEBREAKERS\_\allowbreak{}ECI\}} (\texttt{0x1020b3}), \texttt{ACCESO DENEGADO} (\texttt{0x1020ca}). \\
+2.3 & Buscar algo con forma de clave & Una cadena de 48 caracteres en \texttt{0x102300} (ver abajo). \\ \hline
+\end{tabular}
+\end{table}
+
+{\scriptsize\begin{verbatim}
+CodeBreakersECI_AES256_KEY_2026!
+ECI_VECTOR_2026!
+\end{verbatim}}
+
+\noindent\textbf{Pista encontrada:} la cadena larga no es la clave del reto:
+anuncia \texttt{AES256\_\allowbreak{}KEY} y \texttt{VECTOR}. Esto indica que la clave del reto
+est\'a cifrada con AES-256 y que esa cadena contiene la clave AES y el vector de
+inicializaci\'on (IV). Se verific\'o con \texttt{strings}:
+
+{\scriptsize\begin{verbatim}
+$ strings -n 6 reto_codebreakers_linux_x64 \
+    | grep -E 'ACCESO|FLAG|CodeBreakers'
+ACCESO CONCEDIDO
+FLAG{CODEBREAKERS_ECI}
+ACCESO DENEGADO
+CodeBreakersECI_AES256_KEY_2026!ECI_VECTOR_2026!
+\end{verbatim}}
+
+\section{Paso 3. Seguir la referencia a ACCESO CONCEDIDO}
+
+\begin{table}[H]
+\centering
+\caption{Seguimiento de la referencia hasta \texttt{main}.}
+\footnotesize
+\begin{tabular}{@{}l p{1.35in} p{1.45in}@{}}
+\hline
+\# & Acci\'on & Resultado \\ \hline
+3.1 & Doble clic en \texttt{ACCESO CONCEDIDO} en la lista de cadenas & Se abre el Listing en \texttt{0x1020a2}. \\
+3.2 & Clic derecho $\rightarrow$ References $\rightarrow$ Show References to Address & Una sola referencia, en \texttt{0x101a5b}, dentro de \texttt{main}. \\
+3.3 & Doble clic en la referencia y abrir la ventana Decompiler & Se ve el \texttt{if} que decide entre los dos mensajes. \\ \hline
+\end{tabular}
+\end{table}
+
+Final de \texttt{main} en el Decompiler:
+
+{\scriptsize\begin{verbatim}
+local_1c8 = _DAT_00102320 ^ local_1c8;
+ // XOR con el IV (modo CBC)
+uStack_1c0 = _UNK_00102328 ^ uStack_1c0;
+bStack_1c9 = (byte)(uStack_1c0 >> 0x38);
+ // ultimo byte = relleno
+if ((byte)(bStack_1c9 - 1) < 0x10) {
+  *(undefined1 *)((long)&local_1c8 +
+     (long)(int)(0x10 - (uint)bStack_1c9)) = 0;
+}
+iVar21 = strcmp((char *)local_1a8,
+                (char *)&local_1c8);
+if (iVar21 == 0) {
+  puts("ACCESO CONCEDIDO");
+  puts("FLAG{CODEBREAKERS_ECI}");
+}
+else {
+  puts("ACCESO DENEGADO");
+}
+\end{verbatim}}
+
+\noindent\textbf{Conclusi\'on:} la entrada del usuario (\texttt{local\_\allowbreak{}1a8}, le\'ida
+con \texttt{fgets}) se compara con \texttt{strcmp} contra un b\'ufer de 16 bytes
+(\texttt{local\_\allowbreak{}1c8}). Ese b\'ufer no est\'a en claro en el binario: \texttt{main}
+lo calcula antes de comparar. Hay que entender c\'omo.
+
+\section{Paso 4. Identificar el algoritmo}
+
+Se ley\'o \texttt{main} desde el inicio en el Decompiler, renombrando lo que se
+iba entendiendo.
+
+\begin{table}[H]
+\centering
+\caption{Lectura de \texttt{main} en el Decompiler.}
+\footnotesize
+\begin{tabular}{@{}l p{1.5in} p{1.3in}@{}}
+\hline
+\# & Qu\'e se observ\'o en Ghidra & Interpretaci\'on \\ \hline
+4.1 & \texttt{local\_\allowbreak{}128 = \_\allowbreak{}DAT\_\allowbreak{}00102300} \ldots{} \texttt{uStack\_\allowbreak{}110 = \_\allowbreak{}UNK\_\allowbreak{}00102318}: se copian 32 bytes desde \texttt{0x102300} & Los primeros 32 caracteres de la cadena larga se cargan como clave. \\
+4.2 & Bucle \texttt{do \ldots{} while (uVar23 != 0x3c)} que usa \texttt{sbox[...]} y \texttt{1 << (\ldots)} cada 8 palabras & Expansi\'on de clave de AES-256: 60 palabras (\texttt{0x3c}) y la constante de ronda. \\
+4.3 & \texttt{puVar19 = \&aes\_\allowbreak{}ct}; copia 16 bytes de \texttt{aes\_\allowbreak{}ct} (\texttt{0x1020e0}) & Es el texto cifrado: un solo bloque AES de 16 bytes. \\
+4.4 & \texttt{puVar19 = rsbox;} y llamadas a \texttt{add\_\allowbreak{}round\_\allowbreak{}key(local\_\allowbreak{}1b8, \&local\_\allowbreak{}128, \ldots)} & \texttt{rsbox} es la S-box inversa de AES: el programa descifra, no cifra. \\
+4.5 & \texttt{local\_\allowbreak{}1c8 = \_\allowbreak{}DAT\_\allowbreak{}00102320 \^{} local\_\allowbreak{}1c8} (16 bytes desde \texttt{0x102320}) & XOR con el IV tras descifrar el bloque: modo CBC. El IV es \texttt{ECI\_\allowbreak{}VECTOR\_\allowbreak{}2026!}. \\
+4.6 & Se toma el \'ultimo byte y se pone un 0 en la posici\'on \texttt{0x10 - relleno} & Quita el relleno PKCS\#7 y termina la cadena para \texttt{strcmp}. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Datos identificados en el binario.}
+\footnotesize
+\begin{tabular}{@{}p{0.85in} l p{1.45in}@{}}
+\hline
+Dato & Direcci\'on & Valor \\ \hline
+Clave AES-256 (32 B) & \texttt{0x102300} & \texttt{CodeBreakersECI\_\allowbreak{}AES256\_\allowbreak{}KEY\_\allowbreak{}2026!} \\
+IV (16 B) & \texttt{0x102320} & \texttt{ECI\_\allowbreak{}VECTOR\_\allowbreak{}2026!} \\
+\texttt{aes\_\allowbreak{}ct} (16 B) & \texttt{0x1020e0} & \texttt{d67f5789f451afeb} \texttt{f2b6e566f87fb979} \\
+\texttt{rsbox} (256 B) & \texttt{0x102100} & S-box inversa de AES \\
+\texttt{sbox} (256 B) & \texttt{0x102200} & S-box de AES, usada en la expansi\'on de clave \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Paso 5. Descifrar la clave}
+
+Con la clave, el IV y el texto cifrado identificados en Ghidra, se reprodujo en
+WSL el mismo descifrado que hace \texttt{main}:
+
+{\scriptsize\begin{verbatim}
+KEY=436f6465427265616b6572734543495f
+    4145533235365f4b45595f3230323621
+IV=4543495f564543544f525f3230323621
+CT=d67f5789f451afebf2b6e566f87fb979
+$ printf '%s' "$CT" | xxd -r -p | \
+  openssl enc -d -aes-256-cbc -K $KEY -iv $IV
+BREAKER#2026
+\end{verbatim}}
+
+OpenSSL retira el relleno PKCS\#7 igual que el programa. El resultado es la
+clave: \texttt{BREAKER\#2026}.
+
+\section{Paso 6. Comprobar ejecutando el programa}
+
+{\scriptsize\begin{verbatim}
+$ ./reto_codebreakers_linux_x64
+=== CODEBREAKERS: BOVEDA DIGITAL ECI ===
+Desafio: descubre la clave sin recibir
+el codigo fuente.
+Introduce la clave: BREAKER#2026
+ACCESO CONCEDIDO
+FLAG{CODEBREAKERS_ECI}
+\end{verbatim}}
+
+\begin{table}[H]
+\centering
+\caption{Comparaci\'on de las dos pruebas.}
+\footnotesize
+\begin{tabular}{@{}l l p{1.3in}@{}}
+\hline
+Prueba & Entrada & Salida \\ \hline
+Clave falsa & \texttt{prueba} & \texttt{ACCESO DENEGADO} \\
+Clave descubierta & \texttt{BREAKER\#2026} & \texttt{ACCESO CONCEDIDO} y \texttt{FLAG\{CODEBREAKERS\_\allowbreak{}ECI\}} \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Evidencia para el monitor}
+
+\begin{table}[H]
+\centering
+\caption{Respuestas a la gu\'ia del reto.}
+\footnotesize
+\begin{tabular}{@{}p{1.1in} p{1.8in}@{}}
+\hline
+Pregunta de la gu\'ia & Respuesta \\ \hline
+\textquestiondown Cu\'al es la clave? & \texttt{BREAKER\#2026} \\
+\textquestiondown Qu\'e palabra o funci\'on llev\'o a la conclusi\'on? & La cadena \texttt{CodeBreakersECI\_\allowbreak{}AES256\_\allowbreak{}KEY\_\allowbreak{}2026!ECI\_\allowbreak{}VECTOR\_\allowbreak{}2026!}, la referencia de \texttt{ACCESO CONCEDIDO} hacia \texttt{main}, el \texttt{strcmp} de \texttt{main} y los s\'imbolos \texttt{rsbox}, \texttt{add\_\allowbreak{}round\_\allowbreak{}key} y \texttt{aes\_\allowbreak{}ct}, que identifican un descifrado AES-256-CBC. \\
+\textquestiondown Qu\'e mensaje produce la clave correcta? & \texttt{ACCESO CONCEDIDO} seguido de \texttt{FLAG\{CODEBREAKERS\_\allowbreak{}ECI\}} \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Atajos de Ghidra usados}
+
+\begin{table}[H]
+\centering
+\caption{Atajos y men\'us empleados.}
+\footnotesize
+\begin{tabular}{@{}p{1.5in} p{1.4in}@{}}
+\hline
+Atajo o men\'u & Acci\'on \\ \hline
+Search $\rightarrow$ For Strings\ldots{} & Listar las cadenas del binario \\
+Clic derecho $\rightarrow$ References $\rightarrow$ Show References to Address & Ver desde d\'onde se usa una cadena o un dato \\
+Doble clic & Seguir una referencia, una llamada o un dato \\
+\texttt{L} & Renombrar variable, funci\'on o etiqueta \\
+\texttt{;} & Agregar comentario \\
+\texttt{G} & Ir a una direcci\'on, por ejemplo \texttt{0x102300} \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Reflexi\'on}
+
+\begin{enumerate}
+  \item \textbf{La clave viaja con el programa.} La clave AES y el IV est\'an
+        dentro del mismo ejecutable, en texto plano. Cifrar la contrase\~na solo
+        a\~nade un paso: cualquiera que lea el binario puede descifrarla.
+  \item \textbf{La FLAG no necesita la clave.}
+        \texttt{FLAG\{CODEBREAKERS\_\allowbreak{}ECI\}} est\'a en texto plano y aparece con un
+        simple \texttt{strings}.
+  \item \textbf{Los s\'imbolos ayudan al analista.} Al no estar \textit{stripped},
+        nombres como \texttt{rsbox}, \texttt{add\_\allowbreak{}round\_\allowbreak{}key} y \texttt{aes\_\allowbreak{}ct}
+        delatan el algoritmo de inmediato.
+  \item \textbf{Ofuscar no es proteger.} Un secreto que el programa necesita para
+        decidir debe quedarse en un servidor, no en el cliente.
+\end{enumerate}
+
+\end{document}
