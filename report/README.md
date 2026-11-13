@@ -8,8 +8,7 @@ como proyecto aparte. Todas parten de la misma plantilla IEEEtran del curso.
 |---|---|---|
 | `lab3/` | Lab 3: HTTP, Red Team / Blue Team | LaTeX (`main.tex`) + PDF |
 | `lab5/` | Lab 5: Seguridad de aplicaciones (AppSec) | Markdown (`INFORME_LAB5.md`); pendiente pasarlo a la plantilla |
-| `lab6/` | Lab 6 | Pendiente de agregar |
-| `bitacora-ghidra/` | Bitácora de Ghidra, reto CODEBREAKERS | LaTeX + PDF |
+| `lab6/` | Lab 6: bitácora de Ghidra, reto CODEBREAKERS | LaTeX (`main.tex`) + PDF |
 
 ## Compilar
 
