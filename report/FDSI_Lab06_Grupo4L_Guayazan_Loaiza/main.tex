@@ -1,8 +1,13 @@
 \documentclass[journal]{IEEEtran}
+\usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\addto\captionsspanish{\renewcommand{\abstractname}{Resumen}}
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{float}
+\usepackage{url}
+\usepackage{hyperref}
 
 \hyphenation{op-tical net-works semi-}
 
@@ -11,13 +16,15 @@
 \title{Bit\'acora de Ghidra: CODEBREAKERS\\
 \large El misterio del c\'odigo oculto: paso a paso del an\'alisis}
 
-\author{Brayan~Loaiza~Leal,~\IEEEmembership{Student,~ECI-ISIS}%
-\thanks{Fundamentos de Seguridad Inform\'atica (FDSI), Escuela Colombiana de
-Ingenier\'ia Julio Garavito, 2026. Documento para el monitor: contiene la clave
-del reto; no publicarlo antes de que los compa\~neros lo intenten.}}
+\author{Brayan Loaiza Leal,
+Juan Sebasti\'an Guayaz\'an Clavijo
+\thanks{Fundamentos de Seguridad de la Informaci\'on}
+\thanks{Ingenier\'ia de Sistemas}
+\thanks{Escuela Colombiana de Ingenier\'ia Julio Garavito}
+\thanks{2026, Tercer Tercio}}
 
-\markboth{FDSI -- CODEBREAKERS -- Bit\'acora de Ghidra}%
-{Loaiza Leal: Bit\'acora de Ghidra CODEBREAKERS}
+\markboth{Laboratorio 06 --- Bit\'acora de Ghidra}%
+{Reto CODEBREAKERS}
 
 \maketitle
 
@@ -207,7 +214,7 @@ iba entendiendo.
 \hline
 \# & Qu\'e se observ\'o en Ghidra & Interpretaci\'on \\ \hline
 4.1 & \texttt{local\_\allowbreak{}128 = \_\allowbreak{}DAT\_\allowbreak{}00102300} \ldots{} \texttt{uStack\_\allowbreak{}110 = \_\allowbreak{}UNK\_\allowbreak{}00102318}: se copian 32 bytes desde \texttt{0x102300} & Los primeros 32 caracteres de la cadena larga se cargan como clave. \\
-4.2 & Bucle \texttt{do \ldots{} while (uVar23 != 0x3c)} que usa \texttt{sbox[...]} y \texttt{1 << (\ldots)} cada 8 palabras & Expansi\'on de clave de AES-256: 60 palabras (\texttt{0x3c}) y la constante de ronda. \\
+4.2 & Bucle \texttt{do \ldots{} while (uVar23 != 0x3c)} que usa \texttt{sbox[...]} y \texttt{1 \textless{}\textless{} (\ldots)} cada 8 palabras & Expansi\'on de clave de AES-256: 60 palabras (\texttt{0x3c}) y la constante de ronda. \\
 4.3 & \texttt{puVar19 = \&aes\_\allowbreak{}ct}; copia 16 bytes de \texttt{aes\_\allowbreak{}ct} (\texttt{0x1020e0}) & Es el texto cifrado: un solo bloque AES de 16 bytes. \\
 4.4 & \texttt{puVar19 = rsbox;} y llamadas a \texttt{add\_\allowbreak{}round\_\allowbreak{}key(local\_\allowbreak{}1b8, \&local\_\allowbreak{}128, \ldots)} & \texttt{rsbox} es la S-box inversa de AES: el programa descifra, no cifra. \\
 4.5 & \texttt{local\_\allowbreak{}1c8 = \_\allowbreak{}DAT\_\allowbreak{}00102320 \^{} local\_\allowbreak{}1c8} (16 bytes desde \texttt{0x102320}) & XOR con el IV tras descifrar el bloque: modo CBC. El IV es \texttt{ECI\_\allowbreak{}VECTOR\_\allowbreak{}2026!}. \\
