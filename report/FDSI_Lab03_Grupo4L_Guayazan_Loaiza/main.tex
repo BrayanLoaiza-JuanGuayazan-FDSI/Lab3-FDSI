@@ -350,11 +350,11 @@ Lab3-FDSI/
 |-- services/
 |   |-- alerts-api/  (app.py, requirements.txt)
 |   `-- actions-api/ (app.py, requirements.txt)
-|-- diagrams/dfd-lab3.png
-|-- evidence/{local-exec.txt,server-nginx.txt,red/,blue/}
-|-- reports/zap-passive/
-|-- risk-register.md
-|-- threat-model/threat-model.xlsx
+|-- anexos/diagrams/dfd-lab3.png
+|-- anexos/{local-exec.txt,server-nginx.txt,red/,blue/}
+|-- anexos/zap-passive/
+|-- anexos/risk-register.md
+|-- anexos/threat-model/threat-model.xlsx
 |-- deploy.sh
 `-- README.md
 \end{lstlisting}
@@ -366,9 +366,9 @@ procedimiento de despliegue mediante \texttt{deploy.sh}, la URL publicada
 limitaciones de seguridad conocidas (sin autenticación, sin TLS,
 \texttt{/debug/env} expuesto, sin validación de entrada, sin rate limiting,
 sin cabeceras de seguridad, datos en memoria, logs sin cifrar). El
-\texttt{risk-register.md} contiene activos, actores, límites de confianza y
+\texttt{anexos/risk-register.md} contiene activos, actores, límites de confianza y
 superficie de ataque; la matriz de hipótesis STRIDE y de mitigaciones vive en
-\texttt{threat-model/threat-model.xlsx}.
+\texttt{anexos/threat-model/threat-model.xlsx}.
 
 % ============================================================================
 % 5. EVIDENCIAS DE EJECUCIÓN LOCAL
@@ -412,7 +412,7 @@ prueba se lista en el Anexo~\ref{app:comandos}.
     \label{fig:find_files}
 \end{figure}
 % Debe evidenciar, entre otros: frontend/index.html, nginx/lab3-fdsi.conf,
-% services/alerts-api/app.py, services/actions-api/app.py, risk-register.md.
+% services/alerts-api/app.py, services/actions-api/app.py, anexos/risk-register.md.
 
 \subsection{Servidor HTTP local}
 
@@ -621,7 +621,7 @@ Carga del dashboard & Alertas visibles & \texttt{Error conectando a la API} & CO
 \end{table*}
 
 Los tres últimos casos están documentados en detalle, con evidencia de
-comando/log y corrección aplicada, en \texttt{risk-register.md} y en las
+comando/log y corrección aplicada, en \texttt{anexos/risk-register.md} y en las
 secciones anteriores de este informe.
 
 % ============================================================================
@@ -632,9 +632,9 @@ secciones anteriores de este informe.
 
 El modelo de amenazas permite identificar los activos, actores, límites de
 confianza y posibles riesgos de seguridad existentes en la primera versión
-del sistema. El detalle narrativo se encuentra en \texttt{risk-register.md};
+del sistema. El detalle narrativo se encuentra en \texttt{anexos/risk-register.md};
 la matriz de amenazas STRIDE y de mitigaciones, en
-\texttt{threat-model/threat-model.xlsx}.
+\texttt{anexos/threat-model/threat-model.xlsx}.
 
 \subsection{Activos}
 
@@ -677,7 +677,7 @@ El detalle de las seis hipótesis STRIDE (una por categoría), derivadas
 directamente del código de \texttt{alerts-api} y \texttt{actions-api}, junto
 con su elemento afectado y las mitigaciones candidatas propuestas para cada
 una, se documenta en la matriz de amenazas y mitigaciones
-\texttt{threat-model/threat-model.xlsx} (hojas \textit{Threats} y
+\texttt{anexos/threat-model/threat-model.xlsx} (hojas \textit{Threats} y
 \textit{Mitigation Candidates}), incluida en el repositorio del proyecto y
 enlazada en el Anexo~\ref{app:enlaces}.
 Cubren las seis categorías: \textit{Spoofing}, \textit{Tampering},
@@ -697,7 +697,7 @@ Information Disclosure en la Parte II.
 
 Las mitigaciones candidatas (M-001 a M-006), una por cada hipótesis STRIDE,
 se listan junto con las amenazas que atienden en la hoja \textit{Mitigation
-Candidates} de \texttt{threat-model/threat-model.xlsx}.
+Candidates} de \texttt{anexos/threat-model/threat-model.xlsx}.
 
 % ============================================================================
 % 10. FASE C --- RECONOCIMIENTO RED TEAM
@@ -712,7 +712,7 @@ de entorno acordadas: \texttt{TARGET\_IP=192.168.17.129},
 
 \subsection{Reconocimiento de puertos (Nmap)}
 
-\begin{lstlisting}[language=bash, caption={nmap -sV sobre 80, 5000 y 5001 (evidence/red/nmap\_ports\_extra.nmap)}]
+\begin{lstlisting}[language=bash, caption={nmap -sV sobre 80, 5000 y 5001 (anexos/red/nmap\_ports\_extra.nmap)}]
 PORT     STATE SERVICE VERSION
 80/tcp   open  http    nginx 1.28.3 (Ubuntu)
 5000/tcp open  http    Werkzeug httpd 3.1.8 (Python 3.14.4)
@@ -731,13 +731,13 @@ dashboard, el cual \textbf{documenta por sí mismo} todos los endpoints de
 ambas APIs, incluyendo \texttt{/debug/env} marcado como vulnerabilidad
 intencional. \texttt{curl -s} contra \texttt{/api/alerts/alerts} devolvió el
 cuerpo JSON completo de las 5 alertas sin autenticación
-(\texttt{evidence/red/curl\_alerts\_body.json}).
+(\texttt{anexos/red/curl\_alerts\_body.json}).
 
 \subsection{Inspección pasiva con OWASP ZAP}
 
 Se usó \textit{Manual Explore} contra \texttt{http://192.168.17.129/}
 navegando el dashboard real, sin ejecutar Active Scan. Alertas pasivas
-obtenidas (\texttt{reports/zap-passive/zap-report.html}):
+obtenidas (\texttt{anexos/zap-passive/zap-report.html}):
 
 \begin{itemize}
     \item Content Security Policy (CSP) Header Not Set.
@@ -750,7 +750,7 @@ obtenidas (\texttt{reports/zap-passive/zap-report.html}):
 
 Blue Team inició \texttt{tcpdump} en el servidor durante 60 segundos mientras
 Red Team generaba tráfico desde Kali. El PCAP resultante
-(\texttt{evidence/blue/lab3-http.pcap}, 104 paquetes) muestra las solicitudes
+(\texttt{anexos/blue/lab3-http.pcap}, 104 paquetes) muestra las solicitudes
 y respuestas HTTP completas en texto claro, confirmando H1/H2 del modelo de
 amenazas (Information Disclosure por falta de TLS).
 
@@ -764,10 +764,10 @@ amenazas (Information Disclosure por falta de TLS).
 
 \textbf{Regla:} una misma IP produce 5 o más respuestas HTTP 404 en una
 ventana de 5 minutos en \texttt{lab3\_access.log}. Implementada en
-\texttt{evidence/blue/detect\_404.py} (ventana deslizante por IP, sin
+\texttt{anexos/blue/detect\_404.py} (ventana deslizante por IP, sin
 dependencias externas).
 
-\begin{lstlisting}[caption={Validación contra el log real (evidence/blue/detection\_rule\_result.txt)}]
+\begin{lstlisting}[caption={Validación contra el log real (anexos/blue/detection\_rule\_result.txt)}]
 ALERTA 2026-09-24T03:52:25+00:00 ip=192.168.17.130
        404s_en_5min=5 rutas=['/api/alerts/no-existe']
 \end{lstlisting}
@@ -775,7 +775,7 @@ ALERTA 2026-09-24T03:52:25+00:00 ip=192.168.17.130
 Se validó con tres casos: positivo (6 solicitudes 404 reales generan la
 alerta en el quinto evento, no en el sexto), negativo (el mismo log sin esas
 líneas no alerta) y de umbral (4 líneas 404 no alertan). Limitaciones
-documentadas en \texttt{evidence/blue/detection-rule.md}: solo ve tráfico que
+documentadas en \texttt{anexos/blue/detection-rule.md}: solo ve tráfico que
 pasa por Nginx (el reconocimiento contra 5000/5001 no dejó rastro aquí),
 no detecta un SYN scan puro, se evade bajando la frecuencia o rotando IP, y
 solo mira el código 404 (no detecta enumeración exitosa de rutas con 200).
@@ -798,7 +798,7 @@ pasaban por el proxy.
 
 La Tabla~\ref{tab:purple} correlaciona cada acción Red Team con su evidencia
 Blue Team, con horas reales en UTC (detalle completo en
-\texttt{evidence/purple-team-timeline.md}).
+\texttt{anexos/purple-team-timeline.md}).
 
 \clearpage
 \begin{table*}[p]
@@ -929,11 +929,11 @@ CSP & Ausente & Sigue ausente (pendiente) \\
 
 La superficie de ataque expuesta a la red pasó de 3 puertos con huella de
 versión completa a 1 puerto sin versión, sin afectar la funcionalidad
-legítima. Detalle completo en \url{evidence/retest/comparacion-antes-despues.md}.
+legítima. Detalle completo en \url{anexos/retest/comparacion-antes-despues.md}.
 
 \subsection{Estado final de las amenazas}
 
-Según \texttt{risk-register.md} y \texttt{threat-model/threat-model.xlsx}
+Según \texttt{anexos/risk-register.md} y \texttt{anexos/threat-model/threat-model.xlsx}
 (hoja \textit{Threats}):
 
 \begin{itemize}
@@ -959,7 +959,7 @@ Según \texttt{risk-register.md} y \texttt{threat-model/threat-model.xlsx}
 \label{sec:preguntas}
 
 Respuestas completas, con referencias a la evidencia exacta, en
-\texttt{evidence/preguntas-de-analisis.md}. Resumen:
+\texttt{anexos/preguntas-de-analisis.md}. Resumen:
 
 \begin{enumerate}
     \item \textbf{¿Qué observó Red Team sin explotar nada?} Puertos y
@@ -997,7 +997,7 @@ reconocimiento (Nmap, curl), despliegue, hardening y retest, siempre
 verificados contra la salida real del servidor o del repositorio. Cada
 afirmación técnica de este informe se contrastó con un comando, un log o un
 archivo real; no se compartieron contraseñas, tokens, llaves ni PCAP
-completos con la IA. Detalle en \texttt{evidence/uso-de-ia.md}.
+completos con la IA. Detalle en \texttt{anexos/uso-de-ia.md}.
 
 Ejemplo concreto de una hipótesis de la IA que no se pudo comprobar
 directamente: ante un error de conexión SSH (\texttt{Permission denied} en
@@ -1141,13 +1141,13 @@ Nmap.
     \item \textbf{Matriz de amenazas y mitigaciones (Excel):}
     \url{https://pruebacorreoescuelaingeduco-my.sharepoint.com/:x:/g/personal/juan_guayazan-c_mail_escuelaing_edu_co/IQCsLx8MX5sySIz1uJj1FwUkAQMTC_xtYA3lVGlnFN1Ojvc?e=U0kC20}
     (también versionado en el repositorio, en
-    \texttt{threat-model/threat-model.xlsx})
+    \texttt{anexos/threat-model/threat-model.xlsx})
 \end{itemize}
 
 \section{Lista de Evidencias}
 
 \begin{lstlisting}
-evidence/
+anexos/
 |-- local-exec.txt          (git status, git log, find)
 `-- server-nginx.txt        (hostnamectl, nginx, curl, logs)
 

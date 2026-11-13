@@ -23,9 +23,9 @@ Las horas se expresan en hora de Colombia (COT, UTC-5). Se distingue la fecha de
 ## Entregables documentados en la rama central
 
 - Informe LaTeX existente: `report/main.tex`.
-- Resultados y metodología DAST: `evidence/lab5/dast/DAST_RESULTADOS.md`.
-- Notas bilingües de sustentación: `presentations/lab5/NOTAS_ORADOR_BILINGUES.md`.
-- Evidencias de controles GitHub existentes: `evidence/lab5/github-controles/`.
+- Resultados y metodología DAST: `report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/dast/DAST_RESULTADOS.md`.
+- Notas bilingües de sustentación: `report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/presentacion/NOTAS_ORADOR_BILINGUES.md`.
+- Evidencias de controles GitHub existentes: `report/FDSI_Lab05_Grupo4L_Guayazan_Loaiza/anexos/github-controles/`.
 - Evidencias DAST originales: paquete `evidencias-dast-lab5.zip` (creado el 10 de noviembre, 23:48–23:50 COT).
 
 ## Commits de documentación

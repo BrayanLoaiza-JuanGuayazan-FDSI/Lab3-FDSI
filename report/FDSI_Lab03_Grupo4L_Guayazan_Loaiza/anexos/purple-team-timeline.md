@@ -1,6 +1,6 @@
 # Línea de tiempo Purple Team — Lab 3 FDSI (sesión 2026-09-24)
 
-Todas las horas en UTC. Fuentes: `evidence/red/`, `evidence/blue/`, `evidence/retest/`.
+Todas las horas en UTC. Fuentes: `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/`, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/`, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/`.
 
 | Hora UTC | Acción Red Team | Evidencia Blue Team | Conclusión |
 |---|---|---|---|

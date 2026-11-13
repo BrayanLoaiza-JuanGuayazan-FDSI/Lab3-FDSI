@@ -1,6 +1,6 @@
 # Comparación antes / después — Fase F (retest final)
 
-**Antes** (Fase C, `evidence/red/nmap_ports_extra.*`) vs **Después** (Fase F, `evidence/retest/nmap_final_after_fix.*`), tras aplicar en conjunto: hardening de Nginx (Fase E, esta sesión) + fix de código de `alerts-api`/`actions-api` (bind loopback, `debug=False`, sin `/debug/env`) + UFW restringido a `192.168.17.0/24` (rama del equipo).
+**Antes** (Fase C, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/nmap_ports_extra.*`) vs **Después** (Fase F, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/nmap_final_after_fix.*`), tras aplicar en conjunto: hardening de Nginx (Fase E, esta sesión) + fix de código de `alerts-api`/`actions-api` (bind loopback, `debug=False`, sin `/debug/env`) + UFW restringido a `192.168.17.0/24` (rama del equipo).
 
 | Elemento | Antes | Después |
 |---|---|---|

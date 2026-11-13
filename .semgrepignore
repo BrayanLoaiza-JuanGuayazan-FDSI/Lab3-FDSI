@@ -1,4 +1,2 @@
 # Copias historicas de configuracion: Semgrep las contaba como hallazgos duplicados.
-evidence/
-reports/
 report/

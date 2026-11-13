@@ -5,7 +5,7 @@
 Generar una señal cuando **una misma IP produce 5 o más respuestas HTTP 404 en una ventana de 5 minutos** en `/var/log/nginx/lab3_access.log`.
 
 - Implementación: [`detect_404.py`](detect_404.py) (ventana deslizante por IP, umbral 5, sin dependencias externas).
-- Uso: `python3 evidence/blue/detect_404.py /var/log/nginx/lab3_access.log`
+- Uso: `python3 report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/detect_404.py /var/log/nginx/lab3_access.log`
 - Consulta rápida equivalente (solo agrega, no aplica la ventana): `awk '$9 ~ /404/ {print $1, $4, $7, $9}' /var/log/nginx/lab3_access.log | sort | uniq -c | sort -nr | head` (salida en [`detection_404.txt`](detection_404.txt)).
 
 ## Validación con datos reales
@@ -20,7 +20,7 @@ La alerta salta con el 5.º 404, no con el 6.º: el umbral se evalúa en cada ev
 
 ## Limitaciones
 
-- **Solo ve tráfico que pasa por Nginx.** Los puertos 5000/5001 no pasaban por el proxy cuando se hizo el reconocimiento inicial, por lo que esas sondas no dejaron rastro en `access.log` (ver `evidence/purple-team-timeline.md`).
+- **Solo ve tráfico que pasa por Nginx.** Los puertos 5000/5001 no pasaban por el proxy cuando se hizo el reconocimiento inicial, por lo que esas sondas no dejaron rastro en `access.log` (ver `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/purple-team-timeline.md`).
 - **No detecta escaneos sin handshake completo** (un SYN scan `-sS` no genera línea de log HTTP).
 - **Evasión por baja frecuencia:** 4 solicitudes 404 por ventana, o rotar la IP de origen, no activan la regla.
 - **Solo mira el código 404.** Un atacante que enumera rutas existentes (200/403) no se detecta con esta regla.

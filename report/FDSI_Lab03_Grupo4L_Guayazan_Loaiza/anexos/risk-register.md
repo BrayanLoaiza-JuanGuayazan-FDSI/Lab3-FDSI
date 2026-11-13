@@ -41,24 +41,24 @@
 - Solo `80/tcp` (Nginx) es alcanzable, y únicamente desde `LAB_CIDR` (UFW). Los puertos 5000/5001 aparecen `filtered` y los servicios escuchan en `127.0.0.1`.
 - Endpoints enumerables sin autenticación: los de `/api/alerts/` y `/api/actions/` vía Nginx. `/debug/env` ya no existe.
 - Respuestas sin versión de Nginx y con `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`; sigue sin Content-Security-Policy.
-- El tráfico sigue en HTTP sin cifrar. Comparación completa en `evidence/retest/comparacion-antes-despues.md`.
+- El tráfico sigue en HTTP sin cifrar. Comparación completa en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/comparacion-antes-despues.md`.
 
 ## Modelo de amenazas STRIDE
 
 La matriz de hipótesis STRIDE (con elemento afectado, evidencia y mitigación propuesta) vive en
-`threat-model/threat-model.xlsx` (hojas *Threats*, *Mitigation Candidates* e *Improvements*), no en este archivo.
+`report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/threat-model/threat-model.xlsx` (hojas *Threats*, *Mitigation Candidates* e *Improvements*), no en este archivo.
 
 ## Estado de los riesgos
 
 Estado a la fecha de la retest (detalle por amenaza en la columna *Estado* de la hoja *Threats*):
 
-- **Corregido:** T06 (`/debug/env` eliminado, `server_tokens off`), T09 (puertos 5000/5001 filtrados y servicios en loopback), T10 (`debug=False`). Evidencia: `evidence/retest/`.
-- **Mitigado y verificado:** T05 (`source_ip` y `X-Real-IP` coinciden en la respuesta, `access.log` y `actions.log`; `evidence/retest/source_ip_vm.md`). La identidad autenticada sigue pendiente para Lab 4.
-- **Pendiente para Lab 4:** T01 (HTTP en texto claro, demostrado en `evidence/blue/lab3-http.pcap`), T02, T03, T04 y T08 (sin identidad, autenticación ni autorización).
+- **Corregido:** T06 (`/debug/env` eliminado, `server_tokens off`), T09 (puertos 5000/5001 filtrados y servicios en loopback), T10 (`debug=False`). Evidencia: `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/`.
+- **Mitigado y verificado:** T05 (`source_ip` y `X-Real-IP` coinciden en la respuesta, `access.log` y `actions.log`; `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/source_ip_vm.md`). La identidad autenticada sigue pendiente para Lab 4.
+- **Pendiente para Lab 4:** T01 (HTTP en texto claro, demostrado en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/lab3-http.pcap`), T02, T03, T04 y T08 (sin identidad, autenticación ni autorización).
 - **Pendiente para Lab 4/5:** T07 (servidor de desarrollo y sin límite de tasa).
 - **Aceptado en el Lab 3:** que el servicio siga sin HTTPS ni autenticación, porque la guía los reserva al Lab 4. Por eso T01–T04 y T08 quedan abiertas y no cerradas.
 - **Pendiente:** Content-Security-Policy, no incluida en este hardening.
 
 ## Notas
 
-- La evidencia de campo (Nmap, curl, ZAP pasivo, PCAP, logs, regla de detección, retest y línea de tiempo Purple Team) está en `evidence/` y `reports/zap-passive/`.
+- La evidencia de campo (Nmap, curl, ZAP pasivo, PCAP, logs, regla de detección, retest y línea de tiempo Purple Team) está en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/` y `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/zap-passive/`.

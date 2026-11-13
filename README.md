@@ -124,29 +124,29 @@ export LAB_CIDR=192.168.17.0/24          # segmento autorizado (debe incluir a l
 date -u +%Y-%m-%dT%H:%M:%SZ
 ```
 
-**Red Team (desde Kali, solo contra `TARGET_IP`)** — salidas en `evidence/red/` y `reports/zap-passive/`:
+**Red Team (desde Kali, solo contra `TARGET_IP`)** — salidas en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/` y `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/zap-passive/`:
 
 ```bash
-mkdir -p evidence/red
-date -u +%Y-%m-%dT%H:%M:%SZ | tee evidence/red/start.txt
-nmap -Pn -sV -p 80 "$TARGET_IP" -oA evidence/red/nmap_port80
-nmap -Pn -sV -p 80,5000,5001 "$TARGET_IP" -oA evidence/red/nmap_ports_extra
-curl -i "$TARGET_URL/" | tee evidence/red/curl_home.txt
-curl -I "$TARGET_URL/api/alerts/alerts" | tee evidence/red/curl_headers.txt
+mkdir -p report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red
+date -u +%Y-%m-%dT%H:%M:%SZ | tee report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/start.txt
+nmap -Pn -sV -p 80 "$TARGET_IP" -oA report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/nmap_port80
+nmap -Pn -sV -p 80,5000,5001 "$TARGET_IP" -oA report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/nmap_ports_extra
+curl -i "$TARGET_URL/" | tee report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/curl_home.txt
+curl -I "$TARGET_URL/api/alerts/alerts" | tee report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/curl_headers.txt
 # ZAP: Manual Explore sobre TARGET_URL, sin Active Scan; exportar el reporte HTML
 ```
 
-**Blue Team (en el servidor)** — salidas en `evidence/blue/`:
+**Blue Team (en el servidor)** — salidas en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/`:
 
 ```bash
 sudo timeout 60 tcpdump -i any -nn -s0 -w /tmp/lab3-http.pcap 'tcp port 80'   # mientras Red Team genera tráfico
 sudo tail -n 50 /var/log/nginx/lab3_access.log
 sudo tail -n 30 /var/log/nginx/lab3_error.log
 sudo journalctl -u nginx --since '20 minutes ago' --no-pager
-python3 evidence/blue/detect_404.py /var/log/nginx/lab3_access.log           # regla: 5+ 404 por IP en 5 min
+python3 report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/detect_404.py /var/log/nginx/lab3_access.log           # regla: 5+ 404 por IP en 5 min
 ```
 
-**Retest** — repetir los mismos comandos de Red Team guardando en `evidence/retest/` y comparar con `evidence/red/` (ver `evidence/retest/comparacion-antes-despues.md`). La regla de detección, sus limitaciones y falsos positivos están en `evidence/blue/detection-rule.md`.
+**Retest** — repetir los mismos comandos de Red Team guardando en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/` y comparar con `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/` (ver `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/comparacion-antes-despues.md`). La regla de detección, sus limitaciones y falsos positivos están en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/detection-rule.md`.
 
 ---
 
@@ -199,18 +199,18 @@ Los microservicios escuchan solo en `127.0.0.1` (puertos 5000 y 5001) y se consu
 
 ## Modelo de amenazas
 
-Ver [`risk-register.md`](risk-register.md) para activos, actores, límites de confianza y
+Ver [`report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/risk-register.md`](report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/risk-register.md) para activos, actores, límites de confianza y
 superficie de ataque; el estado de cada riesgo (corregido, mitigado, aceptado o pendiente) está ahí también. Las matrices de amenazas STRIDE, mitigaciones y la cadena
-gap → riesgo → mejora están en `threat-model/threat-model.xlsx`. Diagramas de flujo de datos:
-`diagrams/dfd-lab3.png` (arquitectura inicial) y `diagrams/dfd-lab3-fortalecida.png`
+gap → riesgo → mejora están en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/threat-model/threat-model.xlsx`. Diagramas de flujo de datos:
+`report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/diagrams/dfd-lab3.png` (arquitectura inicial) y `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/diagrams/dfd-lab3-fortalecida.png`
 (arquitectura fortalecida).
 
 ## Estado de la entrega
 
 - **Parte I:** construcción, publicación, estructura del repositorio, evidencia de ejecución local y modelo de amenazas inicial (informe en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/`).
-- **Parte 2:** superficie de ataque reducida, **desplegada y verificada en la VM**: servicios solo en `127.0.0.1`, UFW limitado a `LAB_CIDR`, sin `/debug/env` ni `debug=True`, hardening de Nginx. Evidencia en `evidence/retest/`.
-- **Ronda Red/Blue Team:** ejecutada. Evidencia en `evidence/red/`, `evidence/blue/`, `reports/zap-passive/` y `evidence/purple-team-timeline.md`.
-- **Pendiente (Lab 4/5):** HTTPS/TLS (plan en `threat-model/threat-model.xlsx`, hoja `Improvements`, fila G05), autenticación y RBAC, Content-Security-Policy, rate limiting y servidor WSGI de producción. `source_ip` en las acciones ya quedó verificado en la VM (`evidence/retest/source_ip_vm.md`).
+- **Parte 2:** superficie de ataque reducida, **desplegada y verificada en la VM**: servicios solo en `127.0.0.1`, UFW limitado a `LAB_CIDR`, sin `/debug/env` ni `debug=True`, hardening de Nginx. Evidencia en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/`.
+- **Ronda Red/Blue Team:** ejecutada. Evidencia en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/red/`, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/blue/`, `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/zap-passive/` y `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/purple-team-timeline.md`.
+- **Pendiente (Lab 4/5):** HTTPS/TLS (plan en `report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/threat-model/threat-model.xlsx`, hoja `Improvements`, fila G05), autenticación y RBAC, Content-Security-Policy, rate limiting y servidor WSGI de producción. `source_ip` en las acciones ya quedó verificado en la VM (`report/FDSI_Lab03_Grupo4L_Guayazan_Loaiza/anexos/retest/source_ip_vm.md`).
 
 ---
 

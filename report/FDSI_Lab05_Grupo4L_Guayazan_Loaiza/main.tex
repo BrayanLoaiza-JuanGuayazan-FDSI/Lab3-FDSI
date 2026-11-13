@@ -13,7 +13,7 @@
 \usepackage{multirow}
 \usepackage{hyperref}
 \usepackage{subcaption}
-\graphicspath{{images/}{evidence/lab5/github-controles/}}
+\graphicspath{{images/}{anexos/github-controles/}}
 \newcommand{\evidenceimage}[2]{%
   \IfFileExists{images/#1}{\includegraphics[width=0.96\columnwidth]{#1}}{%
     \fbox{\parbox[c][3.0cm][c]{0.90\columnwidth}{\centering
@@ -75,7 +75,7 @@ Las pruebas se limitaron al repositorio y al entorno local controlado con datos 
 \subsection{SAST y CodeQL}
 Semgrep se ejecutó en GitHub Actions mediante \texttt{.github/workflows/security.yml}. La secuencia de resultados fue de 15 en la línea base, 2 después de excluir las copias históricas F-17 y de la primera remediación, y 0 tras corregir F-16 en Nginx. Las dos coincidencias restantes correspondían a \texttt{proxy\_set\_header Host \$host;} en los dos proxies. El cambio a \texttt{\$proxy\_host} eliminó las coincidencias en el reescaneo.
 
-CodeQL Default setup quedó habilitado para GitHub Actions, JavaScript/TypeScript y Python. La captura de configuración y análisis corresponde a una revisión anterior a la corrección F-15; se presenta como evidencia de configuración, no como garantía de ausencia de vulnerabilidades. El PR \#10 contiene diez capturas de configuración, lenguajes analizados y alertas de Code Scanning, Dependabot y Secret Scanning; se consultan en \href{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/tree/docs/github-security-controls/evidence/lab5/github-controles}{la carpeta de evidencias de GitHub}.
+CodeQL Default setup quedó habilitado para GitHub Actions, JavaScript/TypeScript y Python. La captura de configuración y análisis corresponde a una revisión anterior a la corrección F-15; se presenta como evidencia de configuración, no como garantía de ausencia de vulnerabilidades. El PR \#10 contiene diez capturas de configuración, lenguajes analizados y alertas de Code Scanning, Dependabot y Secret Scanning; se consultan en \href{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/tree/docs/github-security-controls/anexos/github-controles}{la carpeta de evidencias de GitHub}.
 
 \begin{figure}[H]
 \centering
@@ -108,7 +108,7 @@ Los tres análisis registraron cero alertas High y Medium y \texttt{FAIL-NEW=0}.
 \label{fig:zap-summary}
 \end{figure*}
 
-Los reportes HTML, JSON, salidas de terminal y capturas de cada análisis se conservan en \texttt{evidence/lab5/dast/}. El análisis fue local y por HTTP; no evaluó TLS y no incluye el cambio de Nginx propuesto en el PR \#9.
+Los reportes HTML, JSON, salidas de terminal y capturas de cada análisis se conservan en \texttt{anexos/dast/}. El análisis fue local y por HTTP; no evaluó TLS y no incluye el cambio de Nginx propuesto en el PR \#9.
 
 \begin{figure*}[t]
 \centering
@@ -156,7 +156,7 @@ Después, \texttt{main} \texttt{27a871a} & Una sola línea con \texttt{\textback
 \end{tabular}
 \end{table}
 
-\textbf{PR de F-15:} \href{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/pull/8}{Pull Request \#8}. La validación manual completa está en \texttt{evidence/lab5/validacion-f15.txt}.
+\textbf{PR de F-15:} \href{https://github.com/BrayanLoaiza-JuanGuayazan-FDSI/Lab3-FDSI/pull/8}{Pull Request \#8}. La validación manual completa está en \texttt{anexos/validacion-f15.txt}.
 
 \begin{figure}[H]
 \centering
