@@ -7,7 +7,7 @@ como proyecto aparte. Todas parten de la misma plantilla IEEEtran del curso.
 | Carpeta | Contenido | Formato |
 |---|---|---|
 | `FDSI_Lab03_Grupo4L_Guayazan_Loaiza/` | Lab 3: HTTP, Red Team / Blue Team | LaTeX (`main.tex`) |
-| `FDSI_Lab05_Grupo4L_Guayazan_Loaiza/` | Lab 5: Seguridad de aplicaciones (AppSec) | LaTeX (`main.tex`); `INFORME_LAB5.md` es el borrador previo en Markdown |
+| `FDSI_Lab05_Grupo4L_Guayazan_Loaiza/` | Lab 5: Seguridad de aplicaciones (AppSec) | LaTeX (`main.tex`) |
 | `FDSI_Lab06_Grupo4L_Guayazan_Loaiza/` | Lab 6: bitácora de Ghidra, reto CODEBREAKERS | LaTeX (`main.tex`) |
 
 ## Compilar
